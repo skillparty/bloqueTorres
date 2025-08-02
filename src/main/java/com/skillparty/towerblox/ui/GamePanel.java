@@ -131,7 +131,10 @@ public class GamePanel extends JPanel implements KeyListener {
      */
     private void setupTimer() {
         Timer renderTimer = new Timer(16, e -> { // ~60 FPS
-            repaint();
+            if (gameEngine != null) {
+                gameEngine.gameLoop(); // Update game logic
+            }
+            repaint(); // Render
             updateEffects();
             updatePerformanceStats();
         });

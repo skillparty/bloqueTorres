@@ -131,35 +131,27 @@ public class GameEngine implements KeyListener {
     }
 
     /**
-     * Main game loop
+     * Main game loop - called by external timer
      */
     public void gameLoop() {
-        running = true;
-        lastUpdateTime = System.currentTimeMillis();
+        if (!running) {
+            running = true;
+            lastUpdateTime = System.currentTimeMillis();
+        }
         
-        while (running) {
-            long currentTime = System.currentTimeMillis();
-            long deltaTime = currentTime - lastUpdateTime;
+        long currentTime = System.currentTimeMillis();
+        long deltaTime = currentTime - lastUpdateTime;
+        
+        if (deltaTime >= FRAME_TIME) {
+            update(deltaTime);
             
-            if (deltaTime >= FRAME_TIME) {
-                update(deltaTime);
-                
-                // Calculate FPS
-                frameCount++;
-                if (frameCount % 60 == 0) {
-                    fps = 1000.0 / deltaTime;
-                }
-                
-                lastUpdateTime = currentTime;
+            // Calculate FPS
+            frameCount++;
+            if (frameCount % 60 == 0) {
+                fps = 1000.0 / deltaTime;
             }
             
-            // Small sleep to prevent excessive CPU usage
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
+            lastUpdateTime = currentTime;
         }
     }
 

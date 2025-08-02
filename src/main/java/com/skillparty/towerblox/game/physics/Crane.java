@@ -112,6 +112,11 @@ public class Crane {
         // Draw claw with realistic animation
         craneAnimation.renderClaw(g2d, x, y + craneHeight + hookLength);
         
+        // Render current block if it exists and hasn't been dropped
+        if (currentBlock != null && !currentBlock.isDropped()) {
+            currentBlock.render(g2d);
+        }
+        
         // Restore original stroke
         g2d.setStroke(originalStroke);
         

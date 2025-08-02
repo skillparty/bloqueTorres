@@ -181,8 +181,7 @@ public class GameWindow extends JFrame implements GameEngine.GameStateListener {
         gameEngine.startNewGame(difficulty);
         showPanel("GAME");
         
-        // Start game thread
-        startGameThread();
+        // Game loop is handled by GamePanel timer
         
         System.out.println("New game started with difficulty: " + difficulty.getDisplayName());
     }

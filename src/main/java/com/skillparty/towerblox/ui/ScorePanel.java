@@ -156,7 +156,7 @@ public class ScorePanel extends JPanel implements KeyListener {
         button.setPreferredSize(new Dimension(180, 40));
         button.setBackground(backgroundColor);
         button.setForeground(Color.WHITE);
-        button.setBorder(BorderFactory.createRaisedBorderBorder());
+        button.setBorder(BorderFactory.createRaisedBevelBorder());
         button.setFocusPainted(false);
         
         // Add hover effect

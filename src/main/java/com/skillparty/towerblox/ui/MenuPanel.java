@@ -104,7 +104,7 @@ public class MenuPanel extends JPanel implements KeyListener {
         // Style the button
         button.setBackground(new Color(64, 64, 64));
         button.setForeground(Color.WHITE);
-        button.setBorder(BorderFactory.createRaisedBorderBorder());
+        button.setBorder(BorderFactory.createRaisedBevelBorder());
         button.setFocusPainted(false);
         
         return button;
@@ -133,7 +133,7 @@ public class MenuPanel extends JPanel implements KeyListener {
         
         button.setBackground(backgroundColor);
         button.setForeground(foregroundColor);
-        button.setBorder(BorderFactory.createRaisedBorderBorder());
+        button.setBorder(BorderFactory.createRaisedBevelBorder());
         button.setFocusPainted(false);
         
         // Add hover effect
@@ -291,7 +291,7 @@ public class MenuPanel extends JPanel implements KeyListener {
             if (selectedButton != null) {
                 selectedButton.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(Color.YELLOW, 3),
-                    BorderFactory.createRaisedBorderBorder()
+                    BorderFactory.createRaisedBevelBorder()
                 ));
             }
         }
@@ -315,11 +315,11 @@ public class MenuPanel extends JPanel implements KeyListener {
      * Resets all button styles
      */
     private void resetButtonStyles() {
-        easyButton.setBorder(BorderFactory.createRaisedBorderBorder());
-        normalButton.setBorder(BorderFactory.createRaisedBorderBorder());
-        hardButton.setBorder(BorderFactory.createRaisedBorderBorder());
-        highScoresButton.setBorder(BorderFactory.createRaisedBorderBorder());
-        exitButton.setBorder(BorderFactory.createRaisedBorderBorder());
+        easyButton.setBorder(BorderFactory.createRaisedBevelBorder());
+        normalButton.setBorder(BorderFactory.createRaisedBevelBorder());
+        hardButton.setBorder(BorderFactory.createRaisedBevelBorder());
+        highScoresButton.setBorder(BorderFactory.createRaisedBevelBorder());
+        exitButton.setBorder(BorderFactory.createRaisedBevelBorder());
     }
     
     /**

@@ -381,7 +381,7 @@ public class CraneAnimation {
     // Getters
     public AnimationState getCurrentState() { return currentState; }
     public int getCurrentFrame() { return currentFrame; }
-    public double getOpeningRatio() { return getOpeningRatio(); }
+    public double getCurrentOpeningRatio() { return getOpeningRatio(); }
     public boolean isAnimating() { return currentState != AnimationState.IDLE; }
     public boolean isOpening() { return currentState == AnimationState.OPENING; }
     public boolean isClosing() { return currentState == AnimationState.CLOSING; }
