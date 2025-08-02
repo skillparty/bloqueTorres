@@ -1,0 +1,120 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        java: [11, 17, 21]
+    
+    name: Test on ${{ matrix.os }} with Java ${{ matrix.java }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK ${{ matrix.java }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ matrix.java }}
+        distribution: 'temurin'
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Run tests
+      run: mvn clean test -Djava.awt.headless=true
+      
+    - name: Generate test coverage
+      run: mvn jacoco:report
+      
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.java == '11'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./target/site/jacoco/jacoco.xml
+        flags: unittests
+        name: codecov-umbrella
+        
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 11
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Build JAR
+      run: mvn clean package -DskipTests
+      
+    - name: Upload JAR artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: tower-bloxx-jar
+        path: target/tower-bloxx-*.jar
+        
+  release:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 11
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Build release artifacts
+      run: |
+        mvn clean package -DskipTests
+        mvn javadoc:javadoc
+        mvn jacoco:report
+        
+    - name: Create release directory
+      run: |
+        mkdir -p release
+        cp target/tower-bloxx-*.jar release/
+        cp README.md release/
+        cp LICENSE release/
+        cp CONTRIBUTING.md release/
+        
+    - name: Upload release artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: tower-bloxx-release
+        path: release/
