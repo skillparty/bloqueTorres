@@ -6,13 +6,17 @@ import com.skillparty.towerblox.ui.components.FontManager;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.geom.RoundRectangle2D;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
- * Main menu panel with difficulty selection and ASCII logo
+ * Professional animated main menu panel with modern UI design
  */
 public class MenuPanel extends JPanel implements KeyListener {
     private static final long serialVersionUID = 1L;
@@ -21,26 +25,177 @@ public class MenuPanel extends JPanel implements KeyListener {
     private FontManager fontManager;
     private ASCIILogo asciiLogo;
     
-    // UI Components
-    private JButton easyButton;
-    private JButton normalButton;
-    private JButton hardButton;
-    private JButton highScoresButton;
-    private JButton exitButton;
+    // Animation and effects
+    private Timer animationTimer;
+    private List<Particle> particles;
+    private Random random;
+    private long startTime;
+    private float logoGlow = 0.0f;
+    private boolean glowIncreasing = true;
     
-    // Selected difficulty (for keyboard navigation)
-    private int selectedDifficulty = 1; // 0=Easy, 1=Normal, 2=Hard
+    // UI Components
+    private List<MenuButton> menuButtons;
+    private int selectedButton = 1; // 0=Easy, 1=Normal, 2=Hard, 3=HighScores, 4=Exit
     private boolean keyboardMode = false;
+    
+    // Colors and styling
+    private static final Color BACKGROUND_START = new Color(10, 15, 35);
+    private static final Color BACKGROUND_END = new Color(25, 35, 60);
+    private static final Color ACCENT_COLOR = new Color(0, 255, 150);
+    private static final Color SECONDARY_COLOR = new Color(100, 200, 255);
+    private static final Color GLASS_COLOR = new Color(255, 255, 255, 30);
+    
+    // Particle system for background animation
+    private static class Particle {
+        float x, y, vx, vy, size, alpha, life;
+        Color color;
+        
+        Particle(float x, float y) {
+            this.x = x;
+            this.y = y;
+            this.vx = (float)(Math.random() - 0.5) * 2;
+            this.vy = (float)(Math.random() - 0.5) * 2;
+            this.size = (float)Math.random() * 3 + 1;
+            this.alpha = (float)Math.random() * 0.5f + 0.2f;
+            this.life = 1.0f;
+            this.color = Math.random() > 0.5 ? ACCENT_COLOR : SECONDARY_COLOR;
+        }
+        
+        void update() {
+            x += vx;
+            y += vy;
+            life -= 0.003f;
+            alpha = life * 0.7f;
+            
+            // Add some gravitational pull towards center
+            float centerX = 400;
+            float centerY = 300;
+            float dx = centerX - x;
+            float dy = centerY - y;
+            float distance = (float)Math.sqrt(dx*dx + dy*dy);
+            
+            if (distance > 0) {
+                vx += (dx / distance) * 0.01f;
+                vy += (dy / distance) * 0.01f;
+            }
+            
+            // Limit velocity
+            float maxVel = 3.0f;
+            if (Math.abs(vx) > maxVel) vx = vx > 0 ? maxVel : -maxVel;
+            if (Math.abs(vy) > maxVel) vy = vy > 0 ? maxVel : -maxVel;
+            
+            if (life <= 0 || x < -50 || x > 850 || y < -50 || y > 650) {
+                life = 1.0f;
+                x = (float)(Math.random() * 800);
+                y = (float)(Math.random() * 600);
+                vx = (float)(Math.random() - 0.5) * 2;
+                vy = (float)(Math.random() - 0.5) * 2;
+                size = (float)Math.random() * 4 + 1;
+                color = Math.random() > 0.5 ? ACCENT_COLOR : SECONDARY_COLOR;
+            }
+        }
+        
+        void render(Graphics2D g2d) {
+            g2d.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 
+                                 Math.max(0, Math.min(255, (int)(alpha * 255)))));
+            g2d.fillOval((int)x, (int)y, (int)size, (int)size);
+        }
+    }
+    
+    // Custom menu button class
+    private static class MenuButton {
+        String text;
+        String description;
+        Rectangle bounds;
+        DifficultyLevel difficulty;
+        boolean isSpecial; // for high scores and exit
+        float hoverAnimation = 0.0f;
+        Color baseColor;
+        Color hoverColor;
+        
+        MenuButton(String text, String description, DifficultyLevel difficulty, Color baseColor) {
+            this.text = text;
+            this.description = description;
+            this.difficulty = difficulty;
+            this.isSpecial = false;
+            this.baseColor = baseColor;
+            this.hoverColor = baseColor.brighter();
+        }
+        
+        MenuButton(String text, String description, Color baseColor) {
+            this.text = text;
+            this.description = description;
+            this.isSpecial = true;
+            this.baseColor = baseColor;
+            this.hoverColor = baseColor.brighter();
+        }
+        
+        void updateHover(boolean isHovered, boolean isSelected) {
+            float target = (isHovered || isSelected) ? 1.0f : 0.0f;
+            hoverAnimation += (target - hoverAnimation) * 0.15f;
+        }
+        
+        void render(Graphics2D g2d, FontManager fontManager, boolean isSelected) {
+            // Create glass effect background
+            Color bgColor = new Color(
+                (int)(baseColor.getRed() * (0.3f + hoverAnimation * 0.7f)),
+                (int)(baseColor.getGreen() * (0.3f + hoverAnimation * 0.7f)),
+                (int)(baseColor.getBlue() * (0.3f + hoverAnimation * 0.7f)),
+                (int)(100 + hoverAnimation * 100)
+            );
+            
+            // Draw background with rounded corners
+            g2d.setColor(bgColor);
+            g2d.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 20, 20);
+            
+            // Draw glass overlay
+            g2d.setColor(new Color(255, 255, 255, (int)(30 + hoverAnimation * 50)));
+            g2d.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 20, 20);
+            
+            // Draw border
+            if (isSelected) {
+                g2d.setStroke(new BasicStroke(3));
+                g2d.setColor(ACCENT_COLOR);
+            } else {
+                g2d.setStroke(new BasicStroke(2));
+                g2d.setColor(new Color(255, 255, 255, (int)(100 + hoverAnimation * 100)));
+            }
+            g2d.drawRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 20, 20);
+            
+            // Draw text
+            g2d.setFont(fontManager.getFont(FontManager.MENU_SIZE, Font.BOLD));
+            FontMetrics fm = g2d.getFontMetrics();
+            
+            // Main text
+            g2d.setColor(Color.WHITE);
+            int textX = bounds.x + (bounds.width - fm.stringWidth(text)) / 2;
+            int textY = bounds.y + bounds.height / 2 - 5;
+            g2d.drawString(text, textX, textY);
+            
+            // Description text
+            g2d.setFont(fontManager.getFont(FontManager.SMALL_SIZE));
+            fm = g2d.getFontMetrics();
+            g2d.setColor(new Color(200, 200, 200));
+            int descX = bounds.x + (bounds.width - fm.stringWidth(description)) / 2;
+            int descY = textY + 20;
+            g2d.drawString(description, descX, descY);
+        }
+    }
     
     public MenuPanel(GameWindow parentWindow) {
         this.parentWindow = parentWindow;
         this.fontManager = FontManager.getInstance();
         this.asciiLogo = new ASCIILogo();
+        this.random = new Random();
+        this.particles = new ArrayList<>();
+        this.menuButtons = new ArrayList<>();
+        this.startTime = System.currentTimeMillis();
         
         initializePanel();
-        createComponents();
-        setupLayout();
+        createParticles();
+        createMenuButtons();
         setupEventHandlers();
+        startAnimations();
         
         // Make panel focusable for keyboard input
         setFocusable(true);
@@ -51,224 +206,168 @@ public class MenuPanel extends JPanel implements KeyListener {
      * Initializes the panel properties
      */
     private void initializePanel() {
-        setBackground(Color.BLACK);
+        setBackground(BACKGROUND_START);
         setPreferredSize(new Dimension(800, 600));
+        setDoubleBuffered(true);
     }
     
     /**
-     * Creates all UI components
+     * Creates the particle system for background animation
      */
-    private void createComponents() {
-        // Create difficulty buttons
-        easyButton = createDifficultyButton("Fácil", DifficultyLevel.EASY, 
-            "Velocidad reducida - Perfecto para principiantes");
-        normalButton = createDifficultyButton("Normal", DifficultyLevel.NORMAL, 
-            "Velocidad estándar - Experiencia equilibrada");
-        hardButton = createDifficultyButton("Difícil", DifficultyLevel.HARD, 
-            "Velocidad alta - Solo para expertos");
-        
-        // Create other buttons
-        highScoresButton = createMenuButton("Ver Puntuaciones", 
-            "Consulta las mejores puntuaciones");
-        exitButton = createMenuButton("Salir", 
-            "Cerrar el juego");
-        
-        // Set initial selection
-        updateButtonSelection();
+    private void createParticles() {
+        for (int i = 0; i < 50; i++) {
+            particles.add(new Particle(
+                (float)(Math.random() * 800),
+                (float)(Math.random() * 600)
+            ));
+        }
     }
     
     /**
-     * Creates a difficulty selection button
+     * Creates all menu buttons with modern styling
      */
-    private JButton createDifficultyButton(String text, DifficultyLevel difficulty, String tooltip) {
-        JButton button = new JButton(text);
-        button.setFont(fontManager.getMenuFont());
-        button.setPreferredSize(new Dimension(200, 50));
-        button.setToolTipText(tooltip);
+    private void createMenuButtons() {
+        // Difficulty buttons
+        menuButtons.add(new MenuButton("FÁCIL", "Velocidad reducida", 
+            DifficultyLevel.EASY, new Color(46, 204, 113))); // Emerald
+        menuButtons.add(new MenuButton("NORMAL", "Velocidad estándar", 
+            DifficultyLevel.NORMAL, new Color(52, 152, 219))); // Blue
+        menuButtons.add(new MenuButton("DIFÍCIL", "Velocidad alta", 
+            DifficultyLevel.HARD, new Color(231, 76, 60))); // Red
         
-        // Style the button
-        styleButton(button, difficulty);
+        // Special buttons
+        menuButtons.add(new MenuButton("PUNTUACIONES", "Ver mejores scores", 
+            new Color(155, 89, 182))); // Purple
+        menuButtons.add(new MenuButton("SALIR", "Cerrar el juego", 
+            new Color(149, 165, 166))); // Gray
         
-        return button;
+        // Set button positions
+        updateButtonPositions();
     }
     
     /**
-     * Creates a regular menu button
+     * Updates button positions based on panel size
      */
-    private JButton createMenuButton(String text, String tooltip) {
-        JButton button = new JButton(text);
-        button.setFont(fontManager.getMenuFont());
-        button.setPreferredSize(new Dimension(200, 40));
-        button.setToolTipText(tooltip);
+    private void updateButtonPositions() {
+        int buttonWidth = 200;
+        int buttonHeight = 80;
+        int spacing = 20;
+        int startY = 300;
         
-        // Style the button
-        button.setBackground(new Color(64, 64, 64));
-        button.setForeground(Color.WHITE);
-        button.setBorder(BorderFactory.createRaisedBevelBorder());
-        button.setFocusPainted(false);
-        
-        return button;
-    }
-    
-    /**
-     * Styles difficulty buttons with appropriate colors
-     */
-    private void styleButton(JButton button, DifficultyLevel difficulty) {
-        Color backgroundColor;
-        Color foregroundColor = Color.WHITE;
-        
-        switch (difficulty) {
-            case EASY:
-                backgroundColor = new Color(34, 139, 34); // Forest Green
-                break;
-            case NORMAL:
-                backgroundColor = new Color(255, 140, 0); // Dark Orange
-                break;
-            case HARD:
-                backgroundColor = new Color(220, 20, 60); // Crimson
-                break;
-            default:
-                backgroundColor = Color.GRAY;
+        // Difficulty buttons in a row
+        for (int i = 0; i < 3; i++) {
+            int x = (800 - (3 * buttonWidth + 2 * spacing)) / 2 + i * (buttonWidth + spacing);
+            menuButtons.get(i).bounds = new Rectangle(x, startY, buttonWidth, buttonHeight);
         }
         
-        button.setBackground(backgroundColor);
-        button.setForeground(foregroundColor);
-        button.setBorder(BorderFactory.createRaisedBevelBorder());
-        button.setFocusPainted(false);
-        
-        // Add hover effect
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(backgroundColor.brighter());
+        // Special buttons below
+        int specialButtonWidth = 180;
+        int specialStartX = (800 - (2 * specialButtonWidth + spacing)) / 2;
+        menuButtons.get(3).bounds = new Rectangle(specialStartX, startY + buttonHeight + 30, 
+                                                specialButtonWidth, 60);
+        menuButtons.get(4).bounds = new Rectangle(specialStartX + specialButtonWidth + spacing, 
+                                                startY + buttonHeight + 30, specialButtonWidth, 60);
+    }
+    
+    /**
+     * Starts all animations
+     */
+    private void startAnimations() {
+        animationTimer = new Timer(16, e -> {
+            // Update particles
+            for (Particle particle : particles) {
+                particle.update();
             }
             
+            // Update logo glow
+            if (glowIncreasing) {
+                logoGlow += 0.02f;
+                if (logoGlow >= 1.0f) {
+                    logoGlow = 1.0f;
+                    glowIncreasing = false;
+                }
+            } else {
+                logoGlow -= 0.02f;
+                if (logoGlow <= 0.0f) {
+                    logoGlow = 0.0f;
+                    glowIncreasing = true;
+                }
+            }
+            
+            // Update button hover animations
+            Point mousePos = getMousePosition();
+            for (int i = 0; i < menuButtons.size(); i++) {
+                MenuButton button = menuButtons.get(i);
+                boolean isHovered = mousePos != null && button.bounds.contains(mousePos);
+                boolean isSelected = (i == selectedButton && keyboardMode);
+                button.updateHover(isHovered, isSelected);
+            }
+            
+            repaint();
+        });
+        animationTimer.start();
+    }
+    
+
+    
+    /**
+     * Sets up event handlers for mouse interaction
+     */
+    private void setupEventHandlers() {
+        addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(backgroundColor);
+            public void mouseClicked(MouseEvent e) {
+                for (int i = 0; i < menuButtons.size(); i++) {
+                    if (menuButtons.get(i).bounds.contains(e.getPoint())) {
+                        activateButton(i);
+                        break;
+                    }
+                }
+            }
+        });
+        
+        addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                keyboardMode = false;
+                repaint();
             }
         });
     }
     
     /**
-     * Sets up the panel layout
+     * Activates a button by index with visual feedback
      */
-    private void setupLayout() {
-        setLayout(new BorderLayout());
+    private void activateButton(int index) {
+        if (index < 0 || index >= menuButtons.size()) return;
         
-        // Logo panel (top)
-        JPanel logoPanel = createLogoPanel();
-        add(logoPanel, BorderLayout.NORTH);
+        MenuButton button = menuButtons.get(index);
         
-        // Menu panel (center)
-        JPanel menuPanel = createMenuPanel();
-        add(menuPanel, BorderLayout.CENTER);
-        
-        // Info panel (bottom)
-        JPanel infoPanel = createInfoPanel();
-        add(infoPanel, BorderLayout.SOUTH);
-    }
-    
-    /**
-     * Creates the logo panel
-     */
-    private JPanel createLogoPanel() {
-        JPanel panel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2d = (Graphics2D) g.create();
+        // Visual feedback - flash the button
+        Timer flashTimer = new Timer(50, null);
+        final int[] flashCount = {0};
+        flashTimer.addActionListener(e -> {
+            button.hoverAnimation = (flashCount[0] % 2 == 0) ? 1.0f : 0.5f;
+            flashCount[0]++;
+            repaint();
+            
+            if (flashCount[0] >= 6) {
+                flashTimer.stop();
                 
-                // Calculate centered position
-                int logoX = (getWidth() - asciiLogo.getWidth()) / 2;
-                int logoY = 30;
-                
-                // Render logo with terminal background
-                asciiLogo.renderWithBackground(g2d, logoX, logoY, true);
-                
-                g2d.dispose();
+                // Execute action after flash
+                if (index < 3) {
+                    // Difficulty buttons
+                    startGame(button.difficulty);
+                } else if (index == 3) {
+                    // High scores
+                    parentWindow.showHighScores();
+                } else if (index == 4) {
+                    // Exit
+                    parentWindow.exitGame();
+                }
             }
-        };
-        
-        panel.setBackground(Color.BLACK);
-        panel.setPreferredSize(new Dimension(800, asciiLogo.getHeight() + 100));
-        
-        return panel;
-    }
-    
-    /**
-     * Creates the main menu panel
-     */
-    private JPanel createMenuPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(Color.BLACK);
-        
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.anchor = GridBagConstraints.CENTER;
-        
-        // Title
-        JLabel titleLabel = new JLabel("Selecciona la Dificultad");
-        titleLabel.setFont(fontManager.getFont(FontManager.MENU_SIZE + 4, Font.BOLD));
-        titleLabel.setForeground(new Color(0, 255, 0)); // Terminal green
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 3;
-        panel.add(titleLabel, gbc);
-        
-        // Difficulty buttons
-        gbc.gridwidth = 1;
-        gbc.gridy = 1;
-        
-        gbc.gridx = 0;
-        panel.add(easyButton, gbc);
-        
-        gbc.gridx = 1;
-        panel.add(normalButton, gbc);
-        
-        gbc.gridx = 2;
-        panel.add(hardButton, gbc);
-        
-        // Other buttons
-        gbc.gridwidth = 3;
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.insets = new Insets(30, 10, 10, 10);
-        panel.add(highScoresButton, gbc);
-        
-        gbc.gridy = 3;
-        gbc.insets = new Insets(10, 10, 10, 10);
-        panel.add(exitButton, gbc);
-        
-        return panel;
-    }
-    
-    /**
-     * Creates the info panel
-     */
-    private JPanel createInfoPanel() {
-        JPanel panel = new JPanel(new FlowLayout());
-        panel.setBackground(Color.BLACK);
-        
-        JLabel infoLabel = new JLabel("Usa las teclas de flecha y ENTER para navegar | ESC para salir");
-        infoLabel.setFont(fontManager.getSmallFont());
-        infoLabel.setForeground(Color.LIGHT_GRAY);
-        
-        panel.add(infoLabel);
-        
-        return panel;
-    }
-    
-    /**
-     * Sets up event handlers for all buttons
-     */
-    private void setupEventHandlers() {
-        easyButton.addActionListener(e -> startGame(DifficultyLevel.EASY));
-        normalButton.addActionListener(e -> startGame(DifficultyLevel.NORMAL));
-        hardButton.addActionListener(e -> startGame(DifficultyLevel.HARD));
-        
-        highScoresButton.addActionListener(e -> parentWindow.showHighScores());
-        exitButton.addActionListener(e -> parentWindow.exitGame());
+        });
+        flashTimer.start();
     }
     
     /**
@@ -276,60 +375,10 @@ public class MenuPanel extends JPanel implements KeyListener {
      */
     private void startGame(DifficultyLevel difficulty) {
         System.out.println("Starting game with difficulty: " + difficulty.getDisplayName());
+        if (animationTimer != null) {
+            animationTimer.stop();
+        }
         parentWindow.startNewGame(difficulty);
-    }
-    
-    /**
-     * Updates button selection for keyboard navigation
-     */
-    private void updateButtonSelection() {
-        // Reset all buttons
-        resetButtonStyles();
-        
-        if (keyboardMode) {
-            JButton selectedButton = getSelectedButton();
-            if (selectedButton != null) {
-                selectedButton.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(Color.YELLOW, 3),
-                    BorderFactory.createRaisedBevelBorder()
-                ));
-            }
-        }
-    }
-    
-    /**
-     * Gets the currently selected button
-     */
-    private JButton getSelectedButton() {
-        switch (selectedDifficulty) {
-            case 0: return easyButton;
-            case 1: return normalButton;
-            case 2: return hardButton;
-            case 3: return highScoresButton;
-            case 4: return exitButton;
-            default: return normalButton;
-        }
-    }
-    
-    /**
-     * Resets all button styles
-     */
-    private void resetButtonStyles() {
-        easyButton.setBorder(BorderFactory.createRaisedBevelBorder());
-        normalButton.setBorder(BorderFactory.createRaisedBevelBorder());
-        hardButton.setBorder(BorderFactory.createRaisedBevelBorder());
-        highScoresButton.setBorder(BorderFactory.createRaisedBevelBorder());
-        exitButton.setBorder(BorderFactory.createRaisedBevelBorder());
-    }
-    
-    /**
-     * Activates the currently selected button
-     */
-    private void activateSelectedButton() {
-        JButton selectedButton = getSelectedButton();
-        if (selectedButton != null) {
-            selectedButton.doClick();
-        }
     }
     
     // KeyListener implementation
@@ -339,36 +388,32 @@ public class MenuPanel extends JPanel implements KeyListener {
         
         switch (e.getKeyCode()) {
             case KeyEvent.VK_LEFT:
-                if (selectedDifficulty > 0) {
-                    selectedDifficulty--;
-                    updateButtonSelection();
+                if (selectedButton > 0) {
+                    selectedButton--;
                 }
                 break;
                 
             case KeyEvent.VK_RIGHT:
-                if (selectedDifficulty < 4) {
-                    selectedDifficulty++;
-                    updateButtonSelection();
+                if (selectedButton < menuButtons.size() - 1) {
+                    selectedButton++;
                 }
                 break;
                 
             case KeyEvent.VK_UP:
-                if (selectedDifficulty > 2) {
-                    selectedDifficulty = Math.max(0, selectedDifficulty - 3);
-                    updateButtonSelection();
+                if (selectedButton > 2) {
+                    selectedButton = Math.max(0, selectedButton - 3);
                 }
                 break;
                 
             case KeyEvent.VK_DOWN:
-                if (selectedDifficulty < 3) {
-                    selectedDifficulty = Math.min(4, selectedDifficulty + 3);
-                    updateButtonSelection();
+                if (selectedButton < 3) {
+                    selectedButton = Math.min(menuButtons.size() - 1, selectedButton + 3);
                 }
                 break;
                 
             case KeyEvent.VK_ENTER:
             case KeyEvent.VK_SPACE:
-                activateSelectedButton();
+                activateButton(selectedButton);
                 break;
                 
             case KeyEvent.VK_ESCAPE:
@@ -391,6 +436,8 @@ public class MenuPanel extends JPanel implements KeyListener {
                 parentWindow.showHighScores();
                 break;
         }
+        
+        repaint();
     }
     
     @Override
@@ -407,25 +454,129 @@ public class MenuPanel extends JPanel implements KeyListener {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         
-        // Add some visual effects
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         
-        // Draw subtle grid pattern
-        g2d.setColor(new Color(0, 64, 0, 30)); // Very dark green, semi-transparent
-        for (int x = 0; x < getWidth(); x += 50) {
-            g2d.drawLine(x, 0, x, getHeight());
+        // Draw animated gradient background
+        drawAnimatedBackground(g2d);
+        
+        // Draw particles
+        for (Particle particle : particles) {
+            particle.render(g2d);
         }
-        for (int y = 0; y < getHeight(); y += 50) {
-            g2d.drawLine(0, y, getWidth(), y);
+        
+        // Draw logo with glow effect
+        drawLogoWithGlow(g2d);
+        
+        // Draw title
+        drawTitle(g2d);
+        
+        // Draw menu buttons
+        for (int i = 0; i < menuButtons.size(); i++) {
+            menuButtons.get(i).render(g2d, fontManager, i == selectedButton && keyboardMode);
         }
+        
+        // Draw instructions
+        drawInstructions(g2d);
         
         g2d.dispose();
+    }
+    
+    /**
+     * Draws animated gradient background
+     */
+    private void drawAnimatedBackground(Graphics2D g2d) {
+        long time = System.currentTimeMillis() - startTime;
+        float wave = (float)Math.sin(time * 0.001) * 0.3f + 0.7f;
+        
+        Color color1 = new Color(
+            (int)(BACKGROUND_START.getRed() * wave),
+            (int)(BACKGROUND_START.getGreen() * wave),
+            (int)(BACKGROUND_START.getBlue() * wave)
+        );
+        Color color2 = new Color(
+            (int)(BACKGROUND_END.getRed() * wave),
+            (int)(BACKGROUND_END.getGreen() * wave),
+            (int)(BACKGROUND_END.getBlue() * wave)
+        );
+        
+        GradientPaint gradient = new GradientPaint(0, 0, color1, 0, getHeight(), color2);
+        g2d.setPaint(gradient);
+        g2d.fillRect(0, 0, getWidth(), getHeight());
+        
+        // Add subtle pattern overlay
+        g2d.setColor(new Color(255, 255, 255, 5));
+        for (int x = 0; x < getWidth(); x += 100) {
+            for (int y = 0; y < getHeight(); y += 100) {
+                g2d.drawLine(x, y, x + 50, y + 50);
+            }
+        }
+    }
+    
+    /**
+     * Draws the logo with animated glow effect
+     */
+    private void drawLogoWithGlow(Graphics2D g2d) {
+        // Create glow effect
+        int glowSize = (int)(20 * logoGlow);
+        Color glowColor = new Color(ACCENT_COLOR.getRed(), ACCENT_COLOR.getGreen(), 
+                                  ACCENT_COLOR.getBlue(), (int)(50 * logoGlow));
+        
+        // Draw multiple glow layers
+        for (int i = glowSize; i > 0; i--) {
+            g2d.setColor(new Color(glowColor.getRed(), glowColor.getGreen(), 
+                                 glowColor.getBlue(), glowColor.getAlpha() / i));
+            g2d.fillRoundRect(getWidth()/2 - asciiLogo.getWidth()/2 - i, 
+                            50 - i, asciiLogo.getWidth() + 2*i, 
+                            asciiLogo.getHeight() + 2*i, 20, 20);
+        }
+        
+        // Draw logo
+        asciiLogo.render(g2d, getWidth()/2 - asciiLogo.getWidth()/2, 80);
+    }
+    
+    /**
+     * Draws the main title
+     */
+    private void drawTitle(Graphics2D g2d) {
+        String title = "SELECCIONA LA DIFICULTAD";
+        g2d.setFont(fontManager.getFont(FontManager.MENU_SIZE, Font.BOLD));
+        FontMetrics fm = g2d.getFontMetrics();
+        
+        // Draw title with shadow
+        g2d.setColor(new Color(0, 0, 0, 100));
+        g2d.drawString(title, (getWidth() - fm.stringWidth(title)) / 2 + 2, 252);
+        
+        g2d.setColor(ACCENT_COLOR);
+        g2d.drawString(title, (getWidth() - fm.stringWidth(title)) / 2, 250);
+    }
+    
+    /**
+     * Draws instruction text
+     */
+    private void drawInstructions(Graphics2D g2d) {
+        String instructions = "Usa las teclas de flecha y ENTER para navegar | ESC para salir | 1-3 para dificultad";
+        g2d.setFont(fontManager.getFont(FontManager.SMALL_SIZE));
+        FontMetrics fm = g2d.getFontMetrics();
+        
+        g2d.setColor(new Color(200, 200, 200, 150));
+        g2d.drawString(instructions, (getWidth() - fm.stringWidth(instructions)) / 2, 
+                      getHeight() - 20);
     }
     
     @Override
     public void requestFocus() {
         super.requestFocus();
         requestFocusInWindow();
+    }
+    
+    /**
+     * Cleanup method to stop animations when panel is no longer visible
+     */
+    public void cleanup() {
+        if (animationTimer != null) {
+            animationTimer.stop();
+        }
     }
 }

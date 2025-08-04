@@ -250,6 +250,10 @@ public class Crane {
         this.x = Math.max(craneWidth/2, Math.min(gameWidth - craneWidth/2, x)); 
     }
     
+    public void setY(double y) {
+        this.y = Math.max(50, y); // Minimum Y position of 50
+    }
+    
     public void setMovingRight(boolean movingRight) { 
         this.movingRight = movingRight; 
     }

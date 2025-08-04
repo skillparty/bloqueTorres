@@ -3,6 +3,9 @@ package com.skillparty.towerblox.game.physics;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.BasicStroke;
+import java.awt.GradientPaint;
+import java.awt.RenderingHints;
 
 /**
  * Represents a single block in the Tower Bloxx game
@@ -62,15 +65,55 @@ public class Block {
     }
 
     /**
-     * Renders the block on the screen
+     * Renders the block on the screen with improved 3D design
      */
     public void render(Graphics2D g2d) {
-        g2d.setColor(color);
-        g2d.fillRect((int)x, (int)y, (int)width, (int)height);
+        int blockX = (int)x;
+        int blockY = (int)y;
+        int blockWidth = (int)width;
+        int blockHeight = (int)height;
         
-        // Draw border
+        // Enable antialiasing for smoother rendering
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        
+        // Create gradient for 3D effect
+        GradientPaint gradient = new GradientPaint(
+            blockX, blockY, color.brighter().brighter(),
+            blockX + blockWidth, blockY + blockHeight, color.darker()
+        );
+        g2d.setPaint(gradient);
+        g2d.fillRect(blockX, blockY, blockWidth, blockHeight);
+        
+        // Draw 3D highlight on top and left edges
+        g2d.setColor(color.brighter().brighter());
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawLine(blockX, blockY, blockX + blockWidth - 1, blockY); // Top edge
+        g2d.drawLine(blockX, blockY, blockX, blockY + blockHeight - 1); // Left edge
+        
+        // Draw 3D shadow on bottom and right edges
+        g2d.setColor(color.darker().darker());
+        g2d.drawLine(blockX + blockWidth - 1, blockY + 1, blockX + blockWidth - 1, blockY + blockHeight - 1); // Right edge
+        g2d.drawLine(blockX + 1, blockY + blockHeight - 1, blockX + blockWidth - 1, blockY + blockHeight - 1); // Bottom edge
+        
+        // Draw main border
         g2d.setColor(color.darker());
-        g2d.drawRect((int)x, (int)y, (int)width, (int)height);
+        g2d.setStroke(new BasicStroke(1));
+        g2d.drawRect(blockX, blockY, blockWidth, blockHeight);
+        
+        // Add inner highlight for more depth
+        g2d.setColor(new Color(255, 255, 255, 80)); // Semi-transparent white
+        g2d.fillRect(blockX + 2, blockY + 2, blockWidth - 4, blockHeight / 3);
+        
+        // Add texture pattern
+        g2d.setColor(new Color(0, 0, 0, 30)); // Semi-transparent black
+        for (int i = blockX + 4; i < blockX + blockWidth - 4; i += 8) {
+            for (int j = blockY + 4; j < blockY + blockHeight - 4; j += 8) {
+                g2d.fillRect(i, j, 2, 2);
+            }
+        }
+        
+        // Reset stroke
+        g2d.setStroke(new BasicStroke(1));
     }
 
     /**
@@ -86,7 +129,7 @@ public class Block {
      * Checks if this block collides with the ground (bottom boundary)
      */
     public boolean collidesWithGround(int groundLevel) {
-        return (y + height) >= groundLevel;
+        return (y + height) >= groundLevel && isDropped;
     }
 
     /**

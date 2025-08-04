@@ -48,6 +48,10 @@ public class GameEngine implements KeyListener {
     private boolean gameOverTriggered;
     private String gameOverReason;
     
+    // Lives system
+    private int lives;
+    private static final int MAX_LIVES = 3;
+    
     // Callbacks for UI updates
     private GameStateListener stateListener;
     
@@ -95,15 +99,13 @@ public class GameEngine implements KeyListener {
         gameOverReason = "";
         frameCount = 0;
         fps = 0;
+        lives = MAX_LIVES;
         
         if (tower != null) tower.reset();
         if (crane != null) crane.reset();
         if (scoreManager != null) scoreManager.reset();
         
-        // Create first block
-        if (crane != null) {
-            createNewBlock();
-        }
+        // The first block will be created automatically in the update loop
     }
 
     /**
@@ -166,6 +168,12 @@ public class GameEngine implements KeyListener {
         // Update game objects
         if (crane != null) {
             crane.update(deltaTime);
+            
+            // Update the current block if it exists and is dropped
+            Block currentBlock = crane.getCurrentBlock();
+            if (currentBlock != null && currentBlock.isDropped()) {
+                currentBlock.update();
+            }
         }
         
         if (tower != null) {
@@ -177,10 +185,22 @@ public class GameEngine implements KeyListener {
             }
         }
         
-        // Check if current block has landed
+        // Check if current block has landed or fallen off screen
         Block currentBlock = crane.getCurrentBlock();
         if (currentBlock != null && currentBlock.isDropped() && !blockDropped) {
-            checkBlockLanding(currentBlock);
+            // Check if block fell off screen (lost life)
+            if (currentBlock.getY() > GAME_HEIGHT + 50 || 
+                currentBlock.getX() + currentBlock.getWidth() < 0 || 
+                currentBlock.getX() > GAME_WIDTH) {
+                handleBlockLost();
+            } else {
+                checkBlockLanding(currentBlock);
+            }
+        }
+        
+        // If crane doesn't have a block and we're not in the middle of dropping, create one
+        if (crane.getCurrentBlock() == null && !blockDropped) {
+            createNewBlock();
         }
     }
 
@@ -207,6 +227,12 @@ public class GameEngine implements KeyListener {
         
         if (crane != null) {
             crane.render(g2d);
+            
+            // Render the falling block if it exists and is dropped
+            Block currentBlock = crane.getCurrentBlock();
+            if (currentBlock != null && currentBlock.isDropped()) {
+                currentBlock.render(g2d);
+            }
         }
         
         // Render UI elements
@@ -222,7 +248,8 @@ public class GameEngine implements KeyListener {
         g2d.drawString("Height: " + tower.getHeight(), 10, 45);
         g2d.drawString("Blocks: " + scoreManager.getBlocksPlaced(), 10, 65);
         g2d.drawString("Combo: " + scoreManager.getCurrentCombo(), 10, 85);
-        g2d.drawString("Difficulty: " + currentDifficulty.getDisplayName(), 10, 105);
+        g2d.drawString("Lives: " + lives, 10, 105);
+        g2d.drawString("Difficulty: " + currentDifficulty.getDisplayName(), 10, 125);
         
         if (fps > 0) {
             g2d.drawString(String.format("FPS: %.1f", fps), GAME_WIDTH - 80, 25);
@@ -236,8 +263,31 @@ public class GameEngine implements KeyListener {
      * Handles block landing and scoring
      */
     private void checkBlockLanding(Block currentBlock) {
-        if (currentBlock.collidesWithGround(GROUND_LEVEL) || tower.hasCollision(currentBlock)) {
-            // Block has landed
+        boolean hasLanded = false;
+        
+        // Check if block hits the ground
+        if (currentBlock.collidesWithGround(GROUND_LEVEL)) {
+            // Position block exactly on the ground
+            currentBlock.setY(GROUND_LEVEL - currentBlock.getHeight());
+            currentBlock.setVelocityY(0);
+            currentBlock.setVelocityX(0);
+            hasLanded = true;
+        }
+        
+        // Check if block hits another block in the tower
+        else if (tower.hasCollision(currentBlock)) {
+            // Find the topmost block it collides with and position it on top
+            Block topCollision = tower.getTopCollisionBlock(currentBlock);
+            if (topCollision != null) {
+                currentBlock.setY(topCollision.getY() - currentBlock.getHeight());
+                currentBlock.setVelocityY(0);
+                currentBlock.setVelocityX(0);
+                hasLanded = true;
+            }
+        }
+        
+        if (hasLanded) {
+            // Block has landed successfully
             blockDropped = true;
             currentBlock.makeStable();
             
@@ -254,11 +304,39 @@ public class GameEngine implements KeyListener {
                 stateListener.onBlockPlaced(points, scoreManager.getCurrentCombo());
             }
             
-            // Create next block
-            createNewBlock();
+            // Remove the block from crane after it's been added to tower
+            crane.setCurrentBlock(null);
+            
+            // Reset for next block
             blockDropped = false;
             
-            System.out.println("Block placed! Points: " + points + " | Total: " + scoreManager.getCurrentScore());
+            System.out.println("Block placed! Points: " + points + " | Total: " + scoreManager.getCurrentScore() + 
+                             " | Height: " + tower.getHeight() + " | Lives: " + lives);
+        }
+    }
+
+    /**
+     * Handles when a block is lost (falls off screen)
+     */
+    private void handleBlockLost() {
+        lives--;
+        blockDropped = true;
+        
+        // Remove the lost block from crane
+        crane.setCurrentBlock(null);
+        
+        System.out.println("Block lost! Lives remaining: " + lives);
+        
+        if (lives <= 0) {
+            triggerGameOver("No more lives! All blocks fell off the screen.");
+        } else {
+            // Reset for next block (will be created in the main update loop)
+            blockDropped = false;
+            
+            // Notify listeners about life lost
+            if (stateListener != null) {
+                // We can extend the interface later to handle life changes
+            }
         }
     }
 
@@ -266,10 +344,21 @@ public class GameEngine implements KeyListener {
      * Creates a new block for the crane
      */
     private void createNewBlock() {
-        // Random block color
+        // Adjust crane height based on tower height
+        adjustCraneHeight();
+        
+        // More attractive block colors with better contrast
         Color[] colors = {
-            Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW, 
-            Color.ORANGE, Color.MAGENTA, Color.CYAN, Color.PINK
+            new Color(220, 20, 60),   // Crimson
+            new Color(30, 144, 255),  // Dodger Blue
+            new Color(50, 205, 50),   // Lime Green
+            new Color(255, 215, 0),   // Gold
+            new Color(255, 69, 0),    // Orange Red
+            new Color(138, 43, 226),  // Blue Violet
+            new Color(0, 206, 209),   // Dark Turquoise
+            new Color(255, 20, 147),  // Deep Pink
+            new Color(255, 140, 0),   // Dark Orange
+            new Color(72, 61, 139)    // Dark Slate Blue
         };
         Color blockColor = colors[random.nextInt(colors.length)];
         
@@ -279,6 +368,21 @@ public class GameEngine implements KeyListener {
         
         Block newBlock = new Block(crane.getX() - width/2, crane.getY() + 20, width, height, blockColor);
         crane.setCurrentBlock(newBlock);
+    }
+    
+    /**
+     * Adjusts crane height based on tower height
+     */
+    private void adjustCraneHeight() {
+        if (tower != null && !tower.isEmpty()) {
+            // Get the top block of the tower
+            Block topBlock = tower.getTopBlock();
+            if (topBlock != null) {
+                // Position crane above the tower with some clearance
+                double newCraneY = Math.max(50, topBlock.getY() - 150); // At least 150 pixels above top block, minimum Y of 50
+                crane.setY(newCraneY);
+            }
+        }
     }
 
     /**
@@ -407,6 +511,8 @@ public class GameEngine implements KeyListener {
     public long getGameTime() { 
         return currentState == GameState.PLAYING ? System.currentTimeMillis() - gameStartTime : 0; 
     }
+    
+    public int getLives() { return lives; }
 
     // Setters
     public void setStateListener(GameStateListener listener) {

@@ -259,6 +259,27 @@ public class Tower {
     }
     
     /**
+     * Gets the topmost block that collides with the test block
+     */
+    public Block getTopCollisionBlock(Block testBlock) {
+        if (testBlock == null) return null;
+        
+        Block topCollision = null;
+        double highestY = Double.MAX_VALUE; // Lower Y values are higher on screen
+        
+        for (Block block : blocks) {
+            if (block != testBlock && block.collidesWith(testBlock)) {
+                if (block.getY() < highestY) {
+                    highestY = block.getY();
+                    topCollision = block;
+                }
+            }
+        }
+        
+        return topCollision;
+    }
+    
+    /**
      * Gets the topmost block in the tower
      */
     public Block getTopBlock() {
