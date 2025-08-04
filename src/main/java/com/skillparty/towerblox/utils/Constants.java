@@ -21,10 +21,10 @@ public final class Constants {
     public static final int BLOCK_MAX_HEIGHT = 40;
     
     // Crane settings
-    public static final double CRANE_BASE_SPEED = 2.0;
+    public static final double CRANE_BASE_SPEED = 2.5; // Increased for more challenge
     public static final int CRANE_START_Y = 50;
     public static final int CRANE_HEIGHT = 40;
-    public static final int CRANE_HOOK_LENGTH = 20;
+    public static final int CRANE_HOOK_LENGTH = 20; // Short hook - crane will be positioned higher for more drop distance
     
     // Physics constants
     public static final double GRAVITY = 0.5;

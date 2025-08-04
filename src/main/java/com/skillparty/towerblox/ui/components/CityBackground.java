@@ -24,6 +24,18 @@ public class CityBackground {
         DAY, SUNSET, NIGHT, DAWN
     }
     
+    // Animation phases that change as tower grows (activated after level 11)
+    private enum AnimationPhase {
+        GROUND_LEVEL,    // 0-11: Basic construction site
+        LOW_RISE,        // 12-20: City life, traffic
+        MID_RISE,        // 21-30: Above traffic, birds flying
+        HIGH_RISE,       // 31-40: Cloud level, weather effects
+        SKYSCRAPER,      // 41-50: Above clouds, atmospheric effects
+        STRATOSPHERE,    // 51-70: Space-like effects, satellites
+        THERMOSPHERE,    // 71-90: Extreme altitude, space station
+        EXOSPHERE        // 91+: Edge of space, cosmic effects
+    }
+    
     // Background building class
     private static class Building {
         int x, y, width, height;
@@ -327,8 +339,9 @@ public class CityBackground {
     }
     
     public void render(Graphics2D g2d, int towerHeight, double cameraY) {
-        // Calculate time of day based on tower height
+        // Calculate time of day and animation phase based on tower height
         float timeOfDay = (towerHeight % 40) / 40.0f; // Cycle every 40 blocks
+        AnimationPhase phase = getAnimationPhase(towerHeight);
         
         // Render sky gradient
         renderSky(g2d, timeOfDay, cameraY);
@@ -356,6 +369,18 @@ public class CityBackground {
         
         // Add atmospheric effects based on height
         renderAtmosphericEffects(g2d, towerHeight);
+        
+        // Render dynamic animations (activated after level 11)
+        if (towerHeight >= 11) {
+            renderDynamicAnimations(g2d, phase, towerHeight, timeOfDay);
+            System.out.println("🎬 DYNAMIC ANIMATIONS ACTIVE - Phase: " + phase + " | Height: " + towerHeight);
+        }
+        
+        // Render dynamic animations (activated after level 11)
+        if (towerHeight >= 11) {
+            renderDynamicAnimations(g2d, phase, towerHeight, timeOfDay);
+            System.out.println("🎬 DYNAMIC ANIMATIONS ACTIVE - Phase: " + phase + " | Height: " + towerHeight);
+        }
     }
     
     private void renderSky(Graphics2D g2d, float timeOfDay) {
@@ -481,5 +506,439 @@ public class CityBackground {
             float y = (float)(Math.sin(time * 0.01 + i) * 100 + 200);
             g2d.fillOval((int)x, (int)y, 3, 1);
         }
+    }
+    
+    /**
+     * Determines animation phase based on tower height
+     */
+    private AnimationPhase getAnimationPhase(int towerHeight) {
+        if (towerHeight <= 11) return AnimationPhase.GROUND_LEVEL;
+        else if (towerHeight <= 20) return AnimationPhase.LOW_RISE;
+        else if (towerHeight <= 30) return AnimationPhase.MID_RISE;
+        else if (towerHeight <= 40) return AnimationPhase.HIGH_RISE;
+        else if (towerHeight <= 50) return AnimationPhase.SKYSCRAPER;
+        else if (towerHeight <= 70) return AnimationPhase.STRATOSPHERE;
+        else if (towerHeight <= 90) return AnimationPhase.THERMOSPHERE;
+        else return AnimationPhase.EXOSPHERE;
+    }
+    
+    /**
+     * Renders dynamic animations based on current phase (activated after level 11)
+     */
+    private void renderDynamicAnimations(Graphics2D g2d, AnimationPhase phase, int towerHeight, float timeOfDay) {
+        long time = System.currentTimeMillis();
+        
+        switch (phase) {
+            case LOW_RISE:
+                renderLowRiseAnimations(g2d, time, timeOfDay);
+                break;
+            case MID_RISE:
+                renderMidRiseAnimations(g2d, time);
+                break;
+            case HIGH_RISE:
+                renderHighRiseAnimations(g2d, time, towerHeight);
+                break;
+            case SKYSCRAPER:
+                renderSkyscraperAnimations(g2d, time, towerHeight);
+                break;
+            case STRATOSPHERE:
+                renderStratosphereAnimations(g2d, time, towerHeight);
+                break;
+            case THERMOSPHERE:
+                renderThermosphereAnimations(g2d, time, towerHeight);
+                break;
+            case EXOSPHERE:
+                renderExosphereAnimations(g2d, time, towerHeight);
+                break;
+            default:
+                // GROUND_LEVEL - no additional animations
+                break;
+        }
+    }
+    
+    /**
+     * Low rise animations: Traffic, pedestrians, city life
+     */
+    private void renderLowRiseAnimations(Graphics2D g2d, long time, float timeOfDay) {
+        // Animated traffic lights
+        for (int i = 0; i < 3; i++) {
+            int lightX = 200 + i * 200;
+            int lightY = groundLevel - 50;
+            
+            // Traffic light pole
+            g2d.setColor(Color.GRAY);
+            g2d.fillRect(lightX, lightY, 3, 30);
+            
+            // Traffic light colors (cycling)
+            int cycle = (int)((time + i * 2000) / 3000) % 3;
+            Color lightColor = cycle == 0 ? Color.RED : cycle == 1 ? Color.YELLOW : Color.GREEN;
+            g2d.setColor(lightColor);
+            g2d.fillOval(lightX - 3, lightY, 9, 9);
+        }
+        
+        // Moving cars
+        for (int i = 0; i < 4; i++) {
+            float carX = (float)((time * 0.08 + i * 200) % (gameWidth + 50)) - 25;
+            int carY = groundLevel - 15;
+            
+            // Car body
+            g2d.setColor(i % 2 == 0 ? Color.BLUE : Color.RED);
+            g2d.fillRect((int)carX, carY, 25, 10);
+            
+            // Car windows
+            g2d.setColor(new Color(150, 200, 255, 150));
+            g2d.fillRect((int)carX + 2, carY + 2, 21, 6);
+        }
+    }
+    
+    /**
+     * Mid rise animations: Birds, helicopters, wind effects
+     */
+    private void renderMidRiseAnimations(Graphics2D g2d, long time) {
+        // Flying birds in formation
+        g2d.setColor(Color.BLACK);
+        for (int i = 0; i < 8; i++) {
+            float birdX = (float)(150 + i * 30 + Math.sin(time * 0.002 + i) * 50);
+            float birdY = (float)(200 + Math.sin(time * 0.004 + i * 0.5) * 30);
+            
+            // Simple bird shape (V)
+            g2d.drawLine((int)birdX - 3, (int)birdY, (int)birdX, (int)birdY - 2);
+            g2d.drawLine((int)birdX, (int)birdY - 2, (int)birdX + 3, (int)birdY);
+        }
+        
+        // Helicopter
+        float heliX = (float)(300 + Math.sin(time * 0.001) * 200);
+        float heliY = (float)(150 + Math.sin(time * 0.003) * 20);
+        
+        g2d.setColor(Color.RED);
+        g2d.fillOval((int)heliX, (int)heliY, 20, 8);
+        
+        // Rotating blades
+        g2d.setColor(Color.GRAY);
+        double bladeAngle = (time * 0.1) % (Math.PI * 2);
+        int bladeLength = 15;
+        g2d.drawLine((int)heliX + 10, (int)heliY - 5,
+                    (int)(heliX + 10 + Math.cos(bladeAngle) * bladeLength),
+                    (int)(heliY - 5 + Math.sin(bladeAngle) * 3));
+    }
+    
+    /**
+     * High rise animations: Weather effects, lightning, storm clouds
+     */
+    private void renderHighRiseAnimations(Graphics2D g2d, long time, int towerHeight) {
+        // Storm clouds
+        g2d.setColor(new Color(70, 70, 90, 180));
+        for (int i = 0; i < 4; i++) {
+            float cloudX = (float)(i * 200 + Math.sin(time * 0.001 + i) * 30);
+            float cloudY = (float)(100 + Math.sin(time * 0.002 + i) * 20);
+            g2d.fillOval((int)cloudX, (int)cloudY, 80, 40);
+        }
+        
+        // Lightning effect (random flashes)
+        if (Math.random() < 0.02) { // 2% chance per frame
+            g2d.setColor(new Color(255, 255, 255, 200));
+            g2d.setStroke(new BasicStroke(3));
+            int lightningX = random.nextInt(gameWidth);
+            g2d.drawLine(lightningX, 50, lightningX + random.nextInt(40) - 20, 150);
+            g2d.drawLine(lightningX + random.nextInt(40) - 20, 150, lightningX + random.nextInt(60) - 30, 250);
+        }
+        
+        // Rain effect
+        g2d.setColor(new Color(150, 150, 200, 100));
+        for (int i = 0; i < 50; i++) {
+            float rainX = (float)((time * 0.2 + i * 16) % gameWidth);
+            float rainY = (float)((time * 0.3 + i * 12) % groundLevel);
+            g2d.drawLine((int)rainX, (int)rainY, (int)rainX - 2, (int)rainY + 8);
+        }
+    }
+    
+    /**
+     * Skyscraper animations: Above clouds, airplanes, atmospheric effects
+     */
+    private void renderSkyscraperAnimations(Graphics2D g2d, long time, int towerHeight) {
+        // Cloud layer below
+        g2d.setColor(new Color(255, 255, 255, 120));
+        for (int i = 0; i < gameWidth; i += 50) {
+            float cloudHeight = (float)(400 + Math.sin(time * 0.001 + i * 0.01) * 30);
+            g2d.fillOval(i, (int)cloudHeight, 60, 20);
+        }
+        
+        // Commercial airplane
+        float planeX = (float)((time * 0.15) % (gameWidth + 200)) - 100;
+        float planeY = 180;
+        
+        g2d.setColor(Color.WHITE);
+        g2d.fillOval((int)planeX, (int)planeY, 40, 8);
+        g2d.fillRect((int)planeX + 35, (int)planeY - 3, 8, 14); // Tail
+        
+        // Contrails
+        g2d.setColor(new Color(255, 255, 255, 80));
+        for (int i = 0; i < 20; i++) {
+            g2d.fillOval((int)planeX - i * 8, (int)planeY + 2, 6, 2);
+        }
+    }
+    
+    /**
+     * Stratosphere animations: Space-like effects, satellites, aurora
+     */
+    private void renderStratosphereAnimations(Graphics2D g2d, long time, int towerHeight) {
+        // Enhanced aurora effect with multiple colors
+        for (int layer = 0; layer < 3; layer++) {
+            Color auroraColor = layer == 0 ? new Color(0, 255, 150, 80) :
+                               layer == 1 ? new Color(255, 100, 255, 60) :
+                                          new Color(100, 150, 255, 40);
+            g2d.setColor(auroraColor);
+            
+            for (int i = 0; i < gameWidth; i += 15) {
+                float auroraHeight = (float)(80 + layer * 30 + Math.sin(time * 0.003 + i * 0.03 + layer) * 60);
+                float auroraWidth = 10 + layer * 3;
+                g2d.fillRect(i, (int)auroraHeight, (int)auroraWidth, 120 - layer * 20);
+            }
+        }
+        
+        // Multiple satellites with orbital motion
+        for (int i = 0; i < 3; i++) {
+            float orbitRadius = 250 + i * 50;
+            float orbitSpeed = 0.0003f + i * 0.0001f;
+            float satX = (float)(gameWidth/2 + Math.cos(time * orbitSpeed + i * Math.PI * 2/3) * orbitRadius);
+            float satY = (float)(150 + Math.sin(time * orbitSpeed + i * Math.PI * 2/3) * 50);
+            
+            // Only render if satellite is within screen bounds
+            if (satX >= -20 && satX <= gameWidth + 20) {
+                g2d.setColor(Color.LIGHT_GRAY);
+                g2d.fillRect((int)satX, (int)satY, 10, 8);
+                
+                // Solar panels
+                g2d.setColor(new Color(0, 0, 150));
+                g2d.fillRect((int)satX - 8, (int)satY + 2, 6, 4);
+                g2d.fillRect((int)satX + 12, (int)satY + 2, 6, 4);
+                
+                // Antenna
+                g2d.setColor(Color.WHITE);
+                g2d.drawLine((int)satX + 5, (int)satY, (int)satX + 5, (int)satY - 8);
+                
+                // Blinking light
+                if ((time + i * 1000) % 2000 < 1000) {
+                    g2d.setColor(Color.RED);
+                    g2d.fillOval((int)satX + 3, (int)satY + 1, 4, 4);
+                }
+            }
+        }
+        
+        // Enhanced star field with different sizes and colors
+        Random starRandom = new Random(54321); // Fixed seed
+        for (int i = 0; i < 60; i++) {
+            int starX = starRandom.nextInt(gameWidth);
+            int starY = starRandom.nextInt(300);
+            int starSize = starRandom.nextInt(3) + 1;
+            
+            // Different star colors
+            Color starColor = i % 4 == 0 ? new Color(255, 200, 200) :
+                             i % 4 == 1 ? new Color(200, 200, 255) :
+                             i % 4 == 2 ? new Color(255, 255, 200) :
+                                        Color.WHITE;
+            
+            float twinkle = (float)(Math.sin(time * 0.008 + i * 0.5) * 0.4 + 0.6);
+            g2d.setColor(new Color(starColor.getRed(), starColor.getGreen(), starColor.getBlue(), 
+                                 (int)(255 * twinkle)));
+            g2d.fillOval(starX, starY, starSize, starSize);
+            
+            // Add cross pattern for brighter stars
+            if (starSize >= 2 && twinkle > 0.8) {
+                g2d.drawLine(starX - 2, starY + starSize/2, starX + starSize + 2, starY + starSize/2);
+                g2d.drawLine(starX + starSize/2, starY - 2, starX + starSize/2, starY + starSize + 2);
+            }
+        }
+        
+        // Space debris/meteors
+        if (Math.random() < 0.005) { // 0.5% chance per frame
+            int meteorX = random.nextInt(gameWidth);
+            int meteorY = random.nextInt(200);
+            
+            g2d.setColor(new Color(255, 150, 0, 180));
+            g2d.fillOval(meteorX, meteorY, 4, 4);
+            
+            // Meteor trail
+            g2d.setColor(new Color(255, 200, 100, 100));
+            for (int j = 1; j <= 8; j++) {
+                g2d.fillOval(meteorX - j * 3, meteorY + j * 2, 3 - j/3, 3 - j/3);
+            }
+        }
+        
+        // Earth curvature effect at extreme heights
+        if (towerHeight >= 60) {
+            g2d.setColor(new Color(100, 150, 255, 30));
+            g2d.fillArc(-200, groundLevel + 200, gameWidth + 400, 400, 0, 180);
+        }
+    }
+    
+    /**
+     * Thermosphere animations: Space stations, extreme aurora, cosmic radiation
+     */
+    private void renderThermosphereAnimations(Graphics2D g2d, long time, int towerHeight) {
+        // Intense cosmic aurora with plasma effects
+        for (int layer = 0; layer < 4; layer++) {
+            Color plasmaColor = layer == 0 ? new Color(255, 0, 255, 100) :
+                               layer == 1 ? new Color(0, 255, 255, 80) :
+                               layer == 2 ? new Color(255, 255, 0, 60) :
+                                          new Color(255, 100, 0, 40);
+            g2d.setColor(plasmaColor);
+            
+            for (int i = 0; i < gameWidth; i += 10) {
+                float plasmaHeight = (float)(50 + layer * 25 + Math.sin(time * 0.005 + i * 0.05 + layer * 2) * 80);
+                float plasmaIntensity = (float)(Math.sin(time * 0.008 + i * 0.02) * 0.5 + 0.5);
+                int alpha = (int)(plasmaColor.getAlpha() * plasmaIntensity);
+                
+                g2d.setColor(new Color(plasmaColor.getRed(), plasmaColor.getGreen(), 
+                                     plasmaColor.getBlue(), alpha));
+                g2d.fillRect(i, (int)plasmaHeight, 8, (int)(150 * plasmaIntensity));
+            }
+        }
+        
+        // International Space Station
+        float stationX = (float)(100 + Math.sin(time * 0.0002) * 400);
+        float stationY = (float)(120 + Math.sin(time * 0.0003) * 30);
+        
+        if (stationX >= -50 && stationX <= gameWidth + 50) {
+            // Main station body
+            g2d.setColor(Color.WHITE);
+            g2d.fillRect((int)stationX, (int)stationY, 40, 12);
+            
+            // Solar panel arrays
+            g2d.setColor(new Color(0, 0, 200));
+            g2d.fillRect((int)stationX - 20, (int)stationY + 2, 15, 8);
+            g2d.fillRect((int)stationX + 45, (int)stationY + 2, 15, 8);
+            g2d.fillRect((int)stationX - 20, (int)stationY - 15, 15, 8);
+            g2d.fillRect((int)stationX + 45, (int)stationY - 15, 15, 8);
+            
+            // Communication arrays
+            g2d.setColor(Color.LIGHT_GRAY);
+            g2d.drawLine((int)stationX + 20, (int)stationY, (int)stationX + 20, (int)stationY - 25);
+            g2d.fillOval((int)stationX + 17, (int)stationY - 28, 6, 6);
+            
+            // Blinking lights
+            if ((time / 500) % 2 == 0) {
+                g2d.setColor(Color.GREEN);
+                g2d.fillOval((int)stationX + 5, (int)stationY + 3, 3, 3);
+                g2d.fillOval((int)stationX + 32, (int)stationY + 3, 3, 3);
+            }
+        }
+        
+        // Cosmic radiation particles
+        g2d.setColor(new Color(255, 255, 255, 150));
+        for (int i = 0; i < 30; i++) {
+            float radX = (float)((time * 0.3 + i * 27) % (gameWidth + 100)) - 50;
+            float radY = (float)(Math.sin(time * 0.01 + i) * 200 + 150);
+            g2d.fillOval((int)radX, (int)radY, 2, 8);
+        }
+        
+        // Extreme star density
+        Random starRandom = new Random(98765);
+        for (int i = 0; i < 100; i++) {
+            int starX = starRandom.nextInt(gameWidth);
+            int starY = starRandom.nextInt(400);
+            float intensity = (float)(Math.sin(time * 0.01 + i * 0.3) * 0.3 + 0.7);
+            
+            g2d.setColor(new Color(255, 255, 255, (int)(255 * intensity)));
+            g2d.fillOval(starX, starY, 1, 1);
+        }
+        
+        System.out.println("🛰️ THERMOSPHERE ACTIVE - Space station and cosmic effects at height " + towerHeight);
+    }
+    
+    /**
+     * Exosphere animations: Edge of space, cosmic phenomena, galaxy views
+     */
+    private void renderExosphereAnimations(Graphics2D g2d, long time, int towerHeight) {
+        // Deep space background with nebula effects
+        for (int i = 0; i < 5; i++) {
+            Color nebulaColor = i % 2 == 0 ? new Color(150, 0, 255, 40) : new Color(255, 100, 150, 30);
+            g2d.setColor(nebulaColor);
+            
+            float nebulaX = (float)(i * 160 + Math.sin(time * 0.0001 + i) * 50);
+            float nebulaY = (float)(100 + i * 40 + Math.cos(time * 0.0002 + i) * 30);
+            
+            // Create nebula cloud effect
+            for (int j = 0; j < 8; j++) {
+                float cloudX = nebulaX + (float)(Math.cos(j * Math.PI / 4) * 40);
+                float cloudY = nebulaY + (float)(Math.sin(j * Math.PI / 4) * 25);
+                g2d.fillOval((int)cloudX, (int)cloudY, 30, 20);
+            }
+        }
+        
+        // Distant galaxy spiral
+        g2d.setColor(new Color(255, 200, 255, 80));
+        int galaxyCenterX = gameWidth / 2;
+        int galaxyCenterY = 200;
+        
+        for (int arm = 0; arm < 3; arm++) {
+            for (int point = 0; point < 20; point++) {
+                double angle = (time * 0.0001 + arm * Math.PI * 2 / 3 + point * 0.3);
+                double radius = point * 8;
+                
+                int galaxyX = (int)(galaxyCenterX + Math.cos(angle) * radius);
+                int galaxyY = (int)(galaxyCenterY + Math.sin(angle) * radius * 0.3);
+                
+                float brightness = (float)(Math.sin(time * 0.005 + point) * 0.3 + 0.7);
+                g2d.setColor(new Color(255, 200, 255, (int)(80 * brightness)));
+                g2d.fillOval(galaxyX, galaxyY, 3, 3);
+            }
+        }
+        
+        // Cosmic phenomena - pulsars
+        for (int i = 0; i < 3; i++) {
+            int pulsarX = 150 + i * 250;
+            int pulsarY = 100 + i * 50;
+            
+            float pulseIntensity = (float)(Math.sin(time * 0.02 + i * Math.PI) * 0.5 + 0.5);
+            int pulseSize = (int)(5 + pulseIntensity * 10);
+            
+            g2d.setColor(new Color(255, 255, 255, (int)(255 * pulseIntensity)));
+            g2d.fillOval(pulsarX - pulseSize/2, pulsarY - pulseSize/2, pulseSize, pulseSize);
+            
+            // Pulsar beams
+            if (pulseIntensity > 0.7) {
+                g2d.setStroke(new BasicStroke(2));
+                g2d.drawLine(pulsarX, pulsarY - 50, pulsarX, pulsarY + 50);
+                g2d.drawLine(pulsarX - 50, pulsarY, pulsarX + 50, pulsarY);
+            }
+        }
+        
+        // Extreme star field with different stellar types
+        Random cosmicRandom = new Random(13579);
+        for (int i = 0; i < 150; i++) {
+            int starX = cosmicRandom.nextInt(gameWidth);
+            int starY = cosmicRandom.nextInt(500);
+            
+            // Different stellar types
+            Color starColor;
+            int starType = i % 5;
+            switch (starType) {
+                case 0: starColor = new Color(255, 100, 100); break; // Red giant
+                case 1: starColor = new Color(100, 100, 255); break; // Blue giant
+                case 2: starColor = new Color(255, 255, 100); break; // Yellow star
+                case 3: starColor = new Color(255, 200, 150); break; // Orange star
+                default: starColor = Color.WHITE; break; // White dwarf
+            }
+            
+            float twinkle = (float)(Math.sin(time * 0.008 + i * 0.7) * 0.4 + 0.6);
+            g2d.setColor(new Color(starColor.getRed(), starColor.getGreen(), 
+                                 starColor.getBlue(), (int)(255 * twinkle)));
+            
+            int starSize = starType == 0 || starType == 1 ? 3 : 1; // Giants are bigger
+            g2d.fillOval(starX, starY, starSize, starSize);
+        }
+        
+        // Earth as a small blue dot (overview effect)
+        if (towerHeight >= 100) {
+            g2d.setColor(new Color(100, 150, 255, 200));
+            g2d.fillOval(gameWidth - 50, groundLevel + 100, 8, 8);
+            
+            // Atmosphere glow
+            g2d.setColor(new Color(150, 200, 255, 50));
+            g2d.fillOval(gameWidth - 55, groundLevel + 95, 18, 18);
+        }
+        
+        System.out.println("🌌 EXOSPHERE ACTIVE - Edge of space effects at height " + towerHeight);
     }
 }

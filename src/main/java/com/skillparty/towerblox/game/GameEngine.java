@@ -44,8 +44,8 @@ public class GameEngine implements KeyListener {
     // Camera system for following the tower
     private double cameraY = 0; // Camera offset (negative values move view up)
     private double targetCameraY = 0; // Target camera position for smooth movement
-    private static final int CAMERA_TRIGGER_HEIGHT = 12; // Start moving camera at floor 12
-    private static final double CAMERA_SMOOTH_FACTOR = 0.08; // How smoothly camera follows (increased for faster response)
+    private static final int CAMERA_TRIGGER_HEIGHT = 10; // Start moving camera at floor 10 (earlier)
+    private static final double CAMERA_SMOOTH_FACTOR = 0.12; // How smoothly camera follows (increased for faster response)
     private boolean cameraActivated = false; // Track if camera has been activated
     private long cameraActivationTime = 0; // When camera was activated
     
@@ -326,7 +326,7 @@ public class GameEngine implements KeyListener {
             g2d.setColor(new Color(200, 200, 200));
             g2d.drawString(String.format("Altitude: %.0fm", Math.abs(cameraY) / 10), 10, 165);
             g2d.setColor(Color.WHITE);
-        } else if (tower.getHeight() >= CAMERA_TRIGGER_HEIGHT - 2) {
+        } else if (tower.getHeight() >= CAMERA_TRIGGER_HEIGHT - 3) {
             // Show warning when approaching camera trigger
             g2d.setColor(new Color(255, 200, 0)); // Orange
             g2d.drawString("Camera activating soon...", 10, 145);
@@ -382,7 +382,9 @@ public class GameEngine implements KeyListener {
             
             // Add to tower
             Block previousTop = tower.getTopBlock();
+            int previousHeight = tower.getHeight();
             tower.addBlock(currentBlock);
+            int newHeight = tower.getHeight();
             
             // Calculate score
             int points = scoreManager.addBlockScore(currentBlock, previousTop);
@@ -399,10 +401,12 @@ public class GameEngine implements KeyListener {
                     advancedFeatures.onGoodBlockPlacement(blockCenterX, blockTopY, currentBlock);
                 }
                 
+                // Check for height transitions (major phase changes)
+                advancedFeatures.onHeightTransition(blockCenterX, blockTopY, newHeight, previousHeight);
+                
                 // Check for milestone achievements
-                int towerHeight = tower.getHeight();
-                if (towerHeight % 10 == 0) { // Every 10 blocks
-                    advancedFeatures.onMilestoneReached(blockCenterX, blockTopY - 50, towerHeight);
+                if (newHeight % 10 == 0) { // Every 10 blocks
+                    advancedFeatures.onMilestoneReached(blockCenterX, blockTopY - 50, newHeight);
                 }
             }
             
@@ -455,6 +459,9 @@ public class GameEngine implements KeyListener {
         // Adjust crane height based on tower height
         adjustCraneHeight();
         
+        // Adjust crane speed based on tower height for progressive difficulty
+        adjustCraneSpeed();
+        
         int towerHeight = tower != null ? tower.getHeight() : 0;
         Block.BlockType blockType = determineBlockType(towerHeight);
         Color blockColor = getBlockColorForType(blockType, towerHeight);
@@ -465,6 +472,32 @@ public class GameEngine implements KeyListener {
         
         Block newBlock = new Block(crane.getX() - width/2, crane.getY() + 20, width, height, blockColor, blockType);
         crane.setCurrentBlock(newBlock);
+    }
+    
+    /**
+     * Adjusts crane speed based on tower height for progressive difficulty
+     */
+    private void adjustCraneSpeed() {
+        if (tower != null) {
+            int towerHeight = tower.getHeight();
+            double baseSpeed = crane.getBaseSpeed();
+            double speedMultiplier = 1.0;
+            
+            // Progressive speed increase every 10 levels
+            if (towerHeight >= 10) {
+                speedMultiplier += (towerHeight / 10) * 0.3; // +30% speed every 10 levels
+            }
+            
+            // Apply difficulty multiplier
+            speedMultiplier *= currentDifficulty.getSpeedMultiplier();
+            
+            double newSpeed = baseSpeed * speedMultiplier;
+            crane.setSpeed(newSpeed);
+            
+            if (towerHeight > 0 && towerHeight % 10 == 0) {
+                System.out.println("🚀 SPEED INCREASED - Height: " + towerHeight + ", Speed: " + String.format("%.1fx", speedMultiplier));
+            }
+        }
     }
     
     /**
@@ -576,15 +609,39 @@ public class GameEngine implements KeyListener {
             // Get the top block of the tower
             Block topBlock = tower.getTopBlock();
             if (topBlock != null) {
-                // Position crane above the tower with some clearance
-                double newCraneY = topBlock.getY() - 150;
+                int towerHeight = tower.getHeight();
+                double newCraneY;
                 
-                // Ensure crane doesn't go below minimum height
-                newCraneY = Math.max(50, newCraneY);
+                if (towerHeight >= 15) {
+                    // After level 15, maintain constant distance with the last block
+                    // Distance should be MUCH LARGER for challenging gameplay
+                    double CONSTANT_DISTANCE = 300; // Much larger distance for challenging drop
+                    newCraneY = topBlock.getY() - CONSTANT_DISTANCE;
+                    
+                    // Allow crane to go higher when needed, but set reasonable limits
+                    // Minimum Y can be negative (above screen) for very tall towers
+                    double minAllowedY = -500; // Allow crane to go much higher for very tall towers
+                    newCraneY = Math.max(minAllowedY, newCraneY);
+                    
+                    System.out.println("🏗️ ADVANCED CRANE MODE - Maintaining " + CONSTANT_DISTANCE + " pixels distance with top block");
+                } else {
+                    // Before level 15, use progressive logic that scales with tower height
+                    // Start with a large base distance and reduce it as tower grows
+                    double baseDistance = 250; // Large base distance for challenging gameplay
+                    double heightAdjustment = towerHeight * 5; // Reduce distance as tower grows
+                    newCraneY = topBlock.getY() - (baseDistance - heightAdjustment);
+                    
+                    // For early levels, still maintain minimum challenge distance
+                    double minChallengeDistance = topBlock.getY() - 200; // Minimum 200 pixels drop distance
+                    newCraneY = Math.min(newCraneY, minChallengeDistance);
+                    
+                    // Don't let crane go too high initially
+                    newCraneY = Math.max(-100, newCraneY);
+                }
                 
                 crane.setY(newCraneY);
                 
-                System.out.println("Crane adjusted to Y: " + newCraneY + " (Tower top: " + topBlock.getY() + ", Tower height: " + tower.getHeight() + ")");
+                System.out.println("Crane adjusted to Y: " + newCraneY + " (Tower top: " + topBlock.getY() + ", Tower height: " + towerHeight + ", Drop distance: " + (topBlock.getY() - newCraneY) + ")");
             }
         }
     }
@@ -611,20 +668,48 @@ public class GameEngine implements KeyListener {
             // Calculate how much the camera should move based on tower height
             Block topBlock = tower.getTopBlock();
             if (topBlock != null) {
-                // Calculate target camera position to keep the tower in a good view
+                // Calculate target camera position to keep the crane and tower visible
                 double towerTop = topBlock.getY();
-                double desiredViewHeight = GAME_HEIGHT * 0.6; // Keep tower top at 60% from top of screen
+                double craneY = crane.getY();
                 
-                // Calculate the camera offset needed to move the view up
-                targetCameraY = -(towerTop - desiredViewHeight);
+                // Different camera behavior for different tower heights
+                if (towerHeight >= 15) {
+                    // For tall towers (15+), focus on keeping both crane and tower top visible
+                    // The camera should continue moving up as the tower grows
+                    
+                    // Find the highest point (lowest Y value) between crane and tower top
+                    double highestPoint = Math.min(craneY, towerTop);
+                    
+                    // Keep the highest point at about 20% from top of screen for better visibility
+                    double desiredViewHeight = GAME_HEIGHT * 0.20; // 20% from top
+                    
+                    // Calculate camera offset - camera Y is negative when moving up
+                    targetCameraY = -(highestPoint - desiredViewHeight);
+                    
+                    // Ensure camera continues moving up for very tall towers
+                    // Force minimum upward movement based on tower height
+                    double forcedUpwardMovement = (towerHeight - 15) * 25; // 25 pixels per block above 15
+                    double minCameraY = -(150 + forcedUpwardMovement); // Base -150 + additional movement
+                    targetCameraY = Math.min(targetCameraY, minCameraY);
+                    
+                } else {
+                    // For shorter towers (10-14), use progressive movement
+                    double highestPoint = Math.min(craneY, towerTop);
+                    double desiredViewHeight = GAME_HEIGHT * 0.30; // 30% from top gives more room
+                    
+                    // Calculate camera offset
+                    targetCameraY = -(highestPoint - desiredViewHeight);
+                    
+                    // Ensure minimum camera movement based on tower height
+                    double minCameraMovement = (towerHeight - CAMERA_TRIGGER_HEIGHT) * 30; // 30 pixels per block
+                    targetCameraY = Math.min(targetCameraY, -minCameraMovement);
+                }
                 
-                // Limit camera movement - don't go too high
-                double maxCameraOffset = -(towerHeight - CAMERA_TRIGGER_HEIGHT) * 35;
-                targetCameraY = Math.max(targetCameraY, maxCameraOffset);
-                
-                // Debug only for first few activations
-                if (towerHeight <= CAMERA_TRIGGER_HEIGHT + 2) {
-                    System.out.println("Camera target: " + targetCameraY + " (Tower top: " + towerTop + ")");
+                // Debug for camera tracking (show more frequently for testing)
+                if (towerHeight >= 10 && towerHeight % 2 == 0) {
+                    System.out.println("📹 Camera tracking - Height: " + towerHeight + 
+                                     ", Target Y: " + targetCameraY + ", Current Y: " + cameraY + 
+                                     ", Tower top: " + towerTop + ", Crane Y: " + craneY);
                 }
             }
         } else {
@@ -637,8 +722,10 @@ public class GameEngine implements KeyListener {
         double distance = Math.abs(targetCameraY - cameraY);
         double adaptiveFactor = CAMERA_SMOOTH_FACTOR;
         
-        // Move faster when far from target
-        if (distance > 50) {
+        // Move faster when far from target, especially for high towers
+        if (distance > 100) {
+            adaptiveFactor *= 3;
+        } else if (distance > 50) {
             adaptiveFactor *= 2;
         }
         

@@ -82,6 +82,11 @@ public class AdvancedFeaturesManager {
             particleSystem.createFireworks(x, y - 50);
         }
         
+        // Special effects for extreme heights
+        if (milestone >= 30) {
+            createExtremeHeightEffects(x, y, milestone);
+        }
+        
         // Create celebration explosion
         particleSystem.createExplosion(x, y, new Color(255, 215, 0), 3); // Gold color
     }
@@ -167,6 +172,143 @@ public class AdvancedFeaturesManager {
     
     public void clearAllEffects() {
         particleSystem.clear();
+    }
+    
+    /**
+     * Creates special effects for extreme tower heights
+     */
+    private void createExtremeHeightEffects(int x, int y, int milestone) {
+        if (milestone >= 50) {
+            // Stratosphere effects - aurora-like particles
+            createAuroraEffect(x, y);
+        } else if (milestone >= 40) {
+            // Skyscraper effects - cloud burst
+            createCloudBurstEffect(x, y);
+        } else if (milestone >= 30) {
+            // High-rise effects - wind vortex
+            createWindVortexEffect(x, y);
+        }
+    }
+    
+    /**
+     * Creates aurora-like effect for stratosphere heights
+     */
+    private void createAuroraEffect(int x, int y) {
+        // Create shimmering aurora particles
+        for (int i = 0; i < 15; i++) {
+            Color auroraColor = new Color(
+                (int)(Math.random() * 100 + 100), 
+                255, 
+                (int)(Math.random() * 100 + 150),
+                150
+            );
+            particleSystem.createExplosion(x + (int)(Math.random() * 100 - 50), 
+                                         y - (int)(Math.random() * 50), 
+                                         auroraColor, 1);
+        }
+    }
+    
+    /**
+     * Creates cloud burst effect for skyscraper heights
+     */
+    private void createCloudBurstEffect(int x, int y) {
+        // Create expanding cloud-like particles
+        for (int i = 0; i < 20; i++) {
+            Color cloudColor = new Color(255, 255, 255, 120);
+            particleSystem.createExplosion(x + (int)(Math.random() * 80 - 40), 
+                                         y - (int)(Math.random() * 30), 
+                                         cloudColor, 2);
+        }
+    }
+    
+    /**
+     * Creates wind vortex effect for high-rise heights
+     */
+    private void createWindVortexEffect(int x, int y) {
+        // Create swirling wind particles
+        for (int i = 0; i < 12; i++) {
+            double angle = (i * Math.PI * 2) / 12;
+            int windX = x + (int)(Math.cos(angle) * 30);
+            int windY = y + (int)(Math.sin(angle) * 15);
+            Color windColor = new Color(200, 220, 255, 100);
+            particleSystem.createSmokeTrail(windX, windY, 500);
+        }
+    }
+    
+    /**
+     * Trigger effects for tower height transitions
+     */
+    public void onHeightTransition(int x, int y, int newHeight, int previousHeight) {
+        if (!enabled) return;
+        
+        // Check for major height transitions
+        if (newHeight >= 50 && previousHeight < 50) {
+            // Entering stratosphere
+            createStratosphereTransition(x, y);
+        } else if (newHeight >= 40 && previousHeight < 40) {
+            // Entering skyscraper level
+            createSkyscraperTransition(x, y);
+        } else if (newHeight >= 30 && previousHeight < 30) {
+            // Entering high-rise level
+            createHighRiseTransition(x, y);
+        } else if (newHeight >= 20 && previousHeight < 20) {
+            // Entering mid-rise level
+            createMidRiseTransition(x, y);
+        }
+    }
+    
+    /**
+     * Creates stratosphere transition effect
+     */
+    private void createStratosphereTransition(int x, int y) {
+        // Dramatic aurora burst
+        for (int i = 0; i < 25; i++) {
+            Color transitionColor = new Color(0, 255, 150, 200);
+            particleSystem.createExplosion(x + (int)(Math.random() * 120 - 60), 
+                                         y - (int)(Math.random() * 80), 
+                                         transitionColor, 3);
+        }
+        System.out.println("🌌 STRATOSPHERE TRANSITION - Entering space-like zone!");
+    }
+    
+    /**
+     * Creates skyscraper transition effect
+     */
+    private void createSkyscraperTransition(int x, int y) {
+        // Cloud penetration effect
+        for (int i = 0; i < 20; i++) {
+            Color cloudColor = new Color(255, 255, 255, 180);
+            particleSystem.createExplosion(x + (int)(Math.random() * 100 - 50), 
+                                         y - (int)(Math.random() * 60), 
+                                         cloudColor, 2);
+        }
+        System.out.println("☁️ SKYSCRAPER TRANSITION - Above the clouds!");
+    }
+    
+    /**
+     * Creates high-rise transition effect
+     */
+    private void createHighRiseTransition(int x, int y) {
+        // Wind burst effect
+        for (int i = 0; i < 15; i++) {
+            Color windColor = new Color(200, 220, 255, 150);
+            particleSystem.createSmokeTrail(x + (int)(Math.random() * 80 - 40), 
+                                          y - (int)(Math.random() * 40), 800);
+        }
+        System.out.println("💨 HIGH-RISE TRANSITION - Entering wind zone!");
+    }
+    
+    /**
+     * Creates mid-rise transition effect
+     */
+    private void createMidRiseTransition(int x, int y) {
+        // Urban atmosphere effect
+        for (int i = 0; i < 10; i++) {
+            Color urbanColor = new Color(150, 150, 200, 120);
+            particleSystem.createDustImpact(x + (int)(Math.random() * 60 - 30), 
+                                          y - (int)(Math.random() * 30), urbanColor);
+        }
+        System.out.println("🏙️ MID-RISE TRANSITION - Above street level!");
     }
     
     // Getters for subsystems

@@ -251,7 +251,9 @@ public class Crane {
     }
     
     public void setY(double y) {
-        this.y = Math.max(50, y); // Minimum Y position of 50
+        // Allow crane to go above screen (negative Y) for very tall towers
+        // Set a reasonable upper limit to prevent crane from going too far up
+        this.y = Math.max(-300, y); // Increased from -200 to -300 pixels above screen for very tall towers
     }
     
     public void setMovingRight(boolean movingRight) { 
