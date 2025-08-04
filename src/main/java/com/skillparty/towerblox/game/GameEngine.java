@@ -6,6 +6,8 @@ import com.skillparty.towerblox.game.physics.Tower;
 import com.skillparty.towerblox.score.ScoreManager;
 import com.skillparty.towerblox.score.ScoreStorage;
 import com.skillparty.towerblox.score.HighScore;
+import com.skillparty.towerblox.ui.components.CityBackground;
+import com.skillparty.towerblox.effects.AdvancedFeaturesManager;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -36,6 +38,16 @@ public class GameEngine implements KeyListener {
     private ScoreManager scoreManager;
     private ScoreStorage scoreStorage;
     private Random random;
+    private CityBackground cityBackground;
+    private AdvancedFeaturesManager advancedFeatures;
+    
+    // Camera system for following the tower
+    private double cameraY = 0; // Camera offset (negative values move view up)
+    private double targetCameraY = 0; // Target camera position for smooth movement
+    private static final int CAMERA_TRIGGER_HEIGHT = 12; // Start moving camera at floor 12
+    private static final double CAMERA_SMOOTH_FACTOR = 0.08; // How smoothly camera follows (increased for faster response)
+    private boolean cameraActivated = false; // Track if camera has been activated
+    private long cameraActivationTime = 0; // When camera was activated
     
     // Timing
     private long lastUpdateTime;
@@ -86,6 +98,8 @@ public class GameEngine implements KeyListener {
         this.crane = new Crane(GAME_WIDTH / 2, 50, GAME_WIDTH);
         this.currentDifficulty = DifficultyLevel.NORMAL;
         this.scoreManager = new ScoreManager(currentDifficulty);
+        this.cityBackground = new CityBackground(GAME_WIDTH, GAME_HEIGHT, GROUND_LEVEL);
+        this.advancedFeatures = new AdvancedFeaturesManager();
         
         resetGameState();
     }
@@ -100,6 +114,12 @@ public class GameEngine implements KeyListener {
         frameCount = 0;
         fps = 0;
         lives = MAX_LIVES;
+        
+        // Reset camera
+        cameraY = 0;
+        targetCameraY = 0;
+        cameraActivated = false;
+        cameraActivationTime = 0;
         
         if (tower != null) tower.reset();
         if (crane != null) crane.reset();
@@ -173,6 +193,13 @@ public class GameEngine implements KeyListener {
             Block currentBlock = crane.getCurrentBlock();
             if (currentBlock != null && currentBlock.isDropped()) {
                 currentBlock.update();
+                
+                // Add falling effects for dropped blocks
+                if (advancedFeatures != null && Math.random() < 0.3) { // 30% chance per frame
+                    int blockCenterX = (int)(currentBlock.getX() + currentBlock.getWidth() / 2);
+                    int blockBottomY = (int)(currentBlock.getY() + currentBlock.getHeight());
+                    advancedFeatures.onBlockFalling(blockCenterX, blockBottomY);
+                }
             }
         }
         
@@ -184,6 +211,19 @@ public class GameEngine implements KeyListener {
                 triggerGameOver("Tower collapsed!");
             }
         }
+        
+        // Update city background
+        if (cityBackground != null) {
+            cityBackground.update();
+        }
+        
+        // Update advanced features (particle effects, etc.)
+        if (advancedFeatures != null) {
+            advancedFeatures.update(deltaTime / 1000.0); // Convert to seconds
+        }
+        
+        // Update camera system
+        updateCamera();
         
         // Check if current block has landed or fallen off screen
         Block currentBlock = crane.getCurrentBlock();
@@ -205,22 +245,34 @@ public class GameEngine implements KeyListener {
     }
 
     /**
-     * Renders the game
+     * Renders the game with camera transformation
      */
     public void render(Graphics2D g2d) {
         if (currentState != GameState.PLAYING) {
             return;
         }
         
-        // Clear background
-        g2d.setColor(new Color(135, 206, 235)); // Sky blue
-        g2d.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        // Save the original transform
+        var originalTransform = g2d.getTransform();
         
-        // Draw ground
-        g2d.setColor(new Color(34, 139, 34)); // Forest green
-        g2d.fillRect(0, GROUND_LEVEL, GAME_WIDTH, GAME_HEIGHT - GROUND_LEVEL);
+        // Apply camera transformation
+        g2d.translate(0, cameraY);
         
-        // Render game objects
+        // Render dynamic city background
+        if (cityBackground != null) {
+            int towerHeight = tower != null ? tower.getHeight() : 0;
+            cityBackground.render(g2d, towerHeight, cameraY);
+        } else {
+            // Fallback background
+            g2d.setColor(new Color(135, 206, 235)); // Sky blue
+            g2d.fillRect(0, (int)-cameraY, GAME_WIDTH, GAME_HEIGHT);
+            
+            // Draw ground
+            g2d.setColor(new Color(34, 139, 34)); // Forest green
+            g2d.fillRect(0, GROUND_LEVEL, GAME_WIDTH, GAME_HEIGHT - GROUND_LEVEL);
+        }
+        
+        // Render game objects (they will be affected by camera)
         if (tower != null) {
             tower.render(g2d);
         }
@@ -235,7 +287,15 @@ public class GameEngine implements KeyListener {
             }
         }
         
-        // Render UI elements
+        // Render advanced features (particle effects, etc.) - affected by camera
+        if (advancedFeatures != null) {
+            advancedFeatures.render(g2d);
+        }
+        
+        // Restore original transform for UI elements (UI should not move with camera)
+        g2d.setTransform(originalTransform);
+        
+        // Render UI elements (fixed position)
         renderGameUI(g2d);
     }
 
@@ -251,8 +311,37 @@ public class GameEngine implements KeyListener {
         g2d.drawString("Lives: " + lives, 10, 105);
         g2d.drawString("Difficulty: " + currentDifficulty.getDisplayName(), 10, 125);
         
+        // Show camera status when active
+        if (tower.getHeight() >= CAMERA_TRIGGER_HEIGHT) {
+            // Flash effect when camera is newly activated
+            long timeSinceActivation = System.currentTimeMillis() - cameraActivationTime;
+            if (timeSinceActivation < 2000) { // Flash for 2 seconds
+                int alpha = (int)(128 + 127 * Math.sin(timeSinceActivation * 0.01));
+                g2d.setColor(new Color(0, 255, 150, alpha));
+            } else {
+                g2d.setColor(new Color(0, 255, 150)); // Bright green
+            }
+            
+            g2d.drawString("CAMERA FOLLOWING", 10, 145);
+            g2d.setColor(new Color(200, 200, 200));
+            g2d.drawString(String.format("Altitude: %.0fm", Math.abs(cameraY) / 10), 10, 165);
+            g2d.setColor(Color.WHITE);
+        } else if (tower.getHeight() >= CAMERA_TRIGGER_HEIGHT - 2) {
+            // Show warning when approaching camera trigger
+            g2d.setColor(new Color(255, 200, 0)); // Orange
+            g2d.drawString("Camera activating soon...", 10, 145);
+            g2d.setColor(Color.WHITE);
+        }
+        
         if (fps > 0) {
             g2d.drawString(String.format("FPS: %.1f", fps), GAME_WIDTH - 80, 25);
+        }
+        
+        // Show advanced features info
+        if (advancedFeatures != null) {
+            g2d.setColor(new Color(255, 200, 100));
+            g2d.drawString("Effects: " + advancedFeatures.getPerformanceInfo(), GAME_WIDTH - 200, 45);
+            g2d.setColor(Color.WHITE);
         }
         
         // Show controls
@@ -298,6 +387,25 @@ public class GameEngine implements KeyListener {
             // Calculate score
             int points = scoreManager.addBlockScore(currentBlock, previousTop);
             
+            // Trigger visual effects based on placement quality
+            if (advancedFeatures != null) {
+                int blockCenterX = (int)(currentBlock.getX() + currentBlock.getWidth() / 2);
+                int blockTopY = (int)currentBlock.getY();
+                
+                // Determine if it was a perfect placement (high points indicate good alignment)
+                if (points > 1500) { // Perfect placement threshold
+                    advancedFeatures.onPerfectBlockPlacement(blockCenterX, blockTopY, currentBlock);
+                } else if (points > 500) { // Good placement threshold
+                    advancedFeatures.onGoodBlockPlacement(blockCenterX, blockTopY, currentBlock);
+                }
+                
+                // Check for milestone achievements
+                int towerHeight = tower.getHeight();
+                if (towerHeight % 10 == 0) { // Every 10 blocks
+                    advancedFeatures.onMilestoneReached(blockCenterX, blockTopY - 50, towerHeight);
+                }
+            }
+            
             // Notify listeners
             if (stateListener != null) {
                 stateListener.onScoreChanged(scoreManager.getCurrentScore());
@@ -341,33 +449,123 @@ public class GameEngine implements KeyListener {
     }
 
     /**
-     * Creates a new block for the crane
+     * Creates a new block for the crane with appropriate type based on tower height
      */
     private void createNewBlock() {
         // Adjust crane height based on tower height
         adjustCraneHeight();
         
-        // More attractive block colors with better contrast
-        Color[] colors = {
-            new Color(220, 20, 60),   // Crimson
-            new Color(30, 144, 255),  // Dodger Blue
-            new Color(50, 205, 50),   // Lime Green
-            new Color(255, 215, 0),   // Gold
-            new Color(255, 69, 0),    // Orange Red
-            new Color(138, 43, 226),  // Blue Violet
-            new Color(0, 206, 209),   // Dark Turquoise
-            new Color(255, 20, 147),  // Deep Pink
-            new Color(255, 140, 0),   // Dark Orange
-            new Color(72, 61, 139)    // Dark Slate Blue
-        };
-        Color blockColor = colors[random.nextInt(colors.length)];
+        int towerHeight = tower != null ? tower.getHeight() : 0;
+        Block.BlockType blockType = determineBlockType(towerHeight);
+        Color blockColor = getBlockColorForType(blockType, towerHeight);
         
-        // Standard block size with slight variation
-        int width = 80 + random.nextInt(20);
-        int height = 30 + random.nextInt(10);
+        // Block size varies slightly based on type
+        int width = getBlockWidthForType(blockType);
+        int height = getBlockHeightForType(blockType);
         
-        Block newBlock = new Block(crane.getX() - width/2, crane.getY() + 20, width, height, blockColor);
+        Block newBlock = new Block(crane.getX() - width/2, crane.getY() + 20, width, height, blockColor, blockType);
         crane.setCurrentBlock(newBlock);
+    }
+    
+    /**
+     * Determines the block type based on tower height
+     */
+    private Block.BlockType determineBlockType(int towerHeight) {
+        if (towerHeight == 0) {
+            return Block.BlockType.FOUNDATION;
+        } else if (towerHeight < 5) {
+            return Block.BlockType.COMMERCIAL; // Ground floor shops
+        } else if (towerHeight < 15) {
+            return Block.BlockType.RESIDENTIAL; // Residential floors
+        } else if (towerHeight < 25) {
+            return Block.BlockType.OFFICE; // Office floors
+        } else {
+            return Block.BlockType.PENTHOUSE; // Luxury top floors
+        }
+    }
+    
+    /**
+     * Gets appropriate color for block type
+     */
+    private Color getBlockColorForType(Block.BlockType blockType, int towerHeight) {
+        switch (blockType) {
+            case FOUNDATION:
+                return new Color(120, 120, 120); // Gray concrete
+            case COMMERCIAL:
+                Color[] commercialColors = {
+                    new Color(255, 69, 0),    // Orange Red
+                    new Color(255, 140, 0),   // Dark Orange
+                    new Color(255, 215, 0),   // Gold
+                    new Color(50, 205, 50)    // Lime Green
+                };
+                return commercialColors[random.nextInt(commercialColors.length)];
+            case RESIDENTIAL:
+                Color[] residentialColors = {
+                    new Color(220, 20, 60),   // Crimson
+                    new Color(138, 43, 226),  // Blue Violet
+                    new Color(255, 20, 147),  // Deep Pink
+                    new Color(72, 61, 139)    // Dark Slate Blue
+                };
+                return residentialColors[random.nextInt(residentialColors.length)];
+            case OFFICE:
+                Color[] officeColors = {
+                    new Color(30, 144, 255),  // Dodger Blue
+                    new Color(0, 206, 209),   // Dark Turquoise
+                    new Color(100, 149, 237), // Cornflower Blue
+                    new Color(70, 130, 180)   // Steel Blue
+                };
+                return officeColors[random.nextInt(officeColors.length)];
+            case PENTHOUSE:
+                Color[] penthouseColors = {
+                    new Color(255, 215, 0),   // Gold
+                    new Color(255, 223, 0),   // Golden Yellow
+                    new Color(218, 165, 32),  // Goldenrod
+                    new Color(255, 248, 220)  // Cornsilk
+                };
+                return penthouseColors[random.nextInt(penthouseColors.length)];
+            default:
+                return new Color(100, 100, 100);
+        }
+    }
+    
+    /**
+     * Gets appropriate width for block type
+     */
+    private int getBlockWidthForType(Block.BlockType blockType) {
+        switch (blockType) {
+            case FOUNDATION:
+                return 100 + random.nextInt(20); // Wider foundation
+            case COMMERCIAL:
+                return 85 + random.nextInt(15);  // Slightly wider for shops
+            case RESIDENTIAL:
+                return 80 + random.nextInt(20);  // Standard residential
+            case OFFICE:
+                return 90 + random.nextInt(10);  // Uniform office size
+            case PENTHOUSE:
+                return 75 + random.nextInt(25);  // Varied luxury sizes
+            default:
+                return 80 + random.nextInt(20);
+        }
+    }
+    
+    /**
+     * Gets appropriate height for block type
+     */
+    private int getBlockHeightForType(Block.BlockType blockType) {
+        switch (blockType) {
+            case FOUNDATION:
+                return 40 + random.nextInt(10); // Taller foundation
+            case COMMERCIAL:
+                return 35 + random.nextInt(10); // Taller for shops
+            case RESIDENTIAL:
+                return 30 + random.nextInt(10); // Standard height
+            case OFFICE:
+                return 32 + random.nextInt(8);  // Uniform office height
+            case PENTHOUSE:
+                return 38 + random.nextInt(12); // Taller luxury floors
+            default:
+                return 30 + random.nextInt(10);
+        }
     }
     
     /**
@@ -379,9 +577,76 @@ public class GameEngine implements KeyListener {
             Block topBlock = tower.getTopBlock();
             if (topBlock != null) {
                 // Position crane above the tower with some clearance
-                double newCraneY = Math.max(50, topBlock.getY() - 150); // At least 150 pixels above top block, minimum Y of 50
+                double newCraneY = topBlock.getY() - 150;
+                
+                // Ensure crane doesn't go below minimum height
+                newCraneY = Math.max(50, newCraneY);
+                
                 crane.setY(newCraneY);
+                
+                System.out.println("Crane adjusted to Y: " + newCraneY + " (Tower top: " + topBlock.getY() + ", Tower height: " + tower.getHeight() + ")");
             }
+        }
+    }
+    
+    /**
+     * Updates the camera system to follow the tower
+     */
+    private void updateCamera() {
+        if (tower == null || tower.isEmpty()) {
+            return;
+        }
+        
+        int towerHeight = tower.getHeight();
+        
+        // Start moving camera when tower reaches trigger height
+        if (towerHeight >= CAMERA_TRIGGER_HEIGHT) {
+            // Activate camera if not already activated
+            if (!cameraActivated) {
+                cameraActivated = true;
+                cameraActivationTime = System.currentTimeMillis();
+                System.out.println("🎥 CAMERA SYSTEM ACTIVATED - Following tower at height " + towerHeight);
+            }
+            
+            // Calculate how much the camera should move based on tower height
+            Block topBlock = tower.getTopBlock();
+            if (topBlock != null) {
+                // Calculate target camera position to keep the tower in a good view
+                double towerTop = topBlock.getY();
+                double desiredViewHeight = GAME_HEIGHT * 0.6; // Keep tower top at 60% from top of screen
+                
+                // Calculate the camera offset needed to move the view up
+                targetCameraY = -(towerTop - desiredViewHeight);
+                
+                // Limit camera movement - don't go too high
+                double maxCameraOffset = -(towerHeight - CAMERA_TRIGGER_HEIGHT) * 35;
+                targetCameraY = Math.max(targetCameraY, maxCameraOffset);
+                
+                // Debug only for first few activations
+                if (towerHeight <= CAMERA_TRIGGER_HEIGHT + 2) {
+                    System.out.println("Camera target: " + targetCameraY + " (Tower top: " + towerTop + ")");
+                }
+            }
+        } else {
+            // Reset camera when tower is low
+            targetCameraY = 0;
+            cameraActivated = false;
+        }
+        
+        // Smooth camera movement with adaptive speed
+        double distance = Math.abs(targetCameraY - cameraY);
+        double adaptiveFactor = CAMERA_SMOOTH_FACTOR;
+        
+        // Move faster when far from target
+        if (distance > 50) {
+            adaptiveFactor *= 2;
+        }
+        
+        cameraY += (targetCameraY - cameraY) * adaptiveFactor;
+        
+        // Snap to target if very close (prevents infinite small movements)
+        if (Math.abs(targetCameraY - cameraY) < 1.0) {
+            cameraY = targetCameraY;
         }
     }
 
