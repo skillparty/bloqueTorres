@@ -55,26 +55,30 @@ public class Block {
             this.lightColor = new Color(255, 255, 150, 200);
         }
         
-        void render(Graphics2D g2d) {
+        void render(Graphics2D g2d, int blockX, int blockY) {
+            // Calculate absolute position from relative position
+            int absoluteX = blockX + x;
+            int absoluteY = blockY + y;
+            
             // Window frame
             g2d.setColor(new Color(40, 40, 40));
-            g2d.fillRect(x, y, width, height);
+            g2d.fillRect(absoluteX, absoluteY, width, height);
             
             // Window light/reflection
             if (isLit) {
                 g2d.setColor(lightColor);
-                g2d.fillRect(x + 1, y + 1, width - 2, height - 2);
+                g2d.fillRect(absoluteX + 1, absoluteY + 1, width - 2, height - 2);
             } else {
                 // Reflection
                 g2d.setColor(new Color(150, 200, 255, 100));
-                g2d.fillRect(x + 1, y + 1, width - 2, height - 2);
+                g2d.fillRect(absoluteX + 1, absoluteY + 1, width - 2, height - 2);
             }
             
             // Window cross
             g2d.setColor(new Color(60, 60, 60));
             g2d.setStroke(new BasicStroke(1));
-            g2d.drawLine(x + width/2, y, x + width/2, y + height);
-            g2d.drawLine(x, y + height/2, x + width, y + height/2);
+            g2d.drawLine(absoluteX + width/2, absoluteY, absoluteX + width/2, absoluteY + height);
+            g2d.drawLine(absoluteX, absoluteY + height/2, absoluteX + width, absoluteY + height/2);
         }
     }
 
@@ -143,8 +147,9 @@ public class Block {
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
                 if (Math.random() > 0.2) { // 80% chance of window
-                    int wx = (int)x + col * (windowWidth + spacing) + spacing;
-                    int wy = (int)y + row * (windowHeight + spacing) + spacing;
+                    // Store RELATIVE positions, not absolute
+                    int wx = col * (windowWidth + spacing) + spacing;
+                    int wy = row * (windowHeight + spacing) + spacing;
                     windows.add(new Window(wx, wy, windowWidth, windowHeight));
                 }
             }
@@ -158,8 +163,9 @@ public class Block {
         
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
-                int wx = (int)x + col * (windowWidth + spacing) + spacing;
-                int wy = (int)y + row * (windowHeight + spacing) + spacing;
+                // Store RELATIVE positions, not absolute
+                int wx = col * (windowWidth + spacing) + spacing;
+                int wy = row * (windowHeight + spacing) + spacing;
                 windows.add(new Window(wx, wy, windowWidth, windowHeight));
             }
         }
@@ -172,8 +178,9 @@ public class Block {
         int cols = (int)width / (largeWindowWidth + spacing);
         
         for (int col = 0; col < cols; col++) {
-            int wx = (int)x + col * (largeWindowWidth + spacing) + spacing;
-            int wy = (int)y + spacing;
+            // Store RELATIVE positions, not absolute
+            int wx = col * (largeWindowWidth + spacing) + spacing;
+            int wy = spacing;
             windows.add(new Window(wx, wy, largeWindowWidth, largeWindowHeight));
         }
     }
@@ -185,8 +192,9 @@ public class Block {
         int cols = (int)width / (luxuryWidth + spacing);
         
         for (int col = 0; col < cols; col++) {
-            int wx = (int)x + col * (luxuryWidth + spacing) + spacing;
-            int wy = (int)y + spacing;
+            // Store RELATIVE positions, not absolute
+            int wx = col * (luxuryWidth + spacing) + spacing;
+            int wy = spacing;
             Window window = new Window(wx, wy, luxuryWidth, luxuryHeight);
             window.lightColor = new Color(255, 215, 0, 180); // Golden light
             windows.add(window);
@@ -249,9 +257,9 @@ public class Block {
                 break;
         }
         
-        // Render windows
+        // Render windows with correct positioning
         for (Window window : windows) {
-            window.render(g2d);
+            window.render(g2d, blockX, blockY);
         }
         
         // Render additional features

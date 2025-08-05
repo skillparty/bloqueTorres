@@ -164,8 +164,6 @@ public class Crane {
         
         // Drop the block
         currentBlock.drop();
-        
-        System.out.println("Block dropped at position: " + x + " | Animation started");
     }
     
 
@@ -251,9 +249,9 @@ public class Crane {
     }
     
     public void setY(double y) {
-        // Allow crane to go above screen (negative Y) for very tall towers
-        // Set a reasonable upper limit to prevent crane from going too far up
-        this.y = Math.max(-300, y); // Increased from -200 to -300 pixels above screen for very tall towers
+        // FIXED: Allow crane to go much higher for very tall towers
+        // Remove restrictive limit that was causing distance reduction at high levels
+        this.y = Math.max(-2000, y); // Allow crane to go much higher to maintain proper distances
     }
     
     public void setMovingRight(boolean movingRight) { 

@@ -246,27 +246,34 @@ public class MenuPanel extends JPanel implements KeyListener {
     }
     
     /**
-     * Updates button positions based on panel size
+     * Updates button positions based on panel size - FIXED FOR NO OVERLAPPING
      */
     private void updateButtonPositions() {
-        int buttonWidth = 200;
-        int buttonHeight = 80;
-        int spacing = 20;
-        int startY = 300;
+        int buttonWidth = 180;
+        int buttonHeight = 70;
+        int spacing = 25;
+        int startY = 320;
         
-        // Difficulty buttons in a row
+        // Difficulty buttons in a row - properly spaced
+        int totalWidth = 3 * buttonWidth + 2 * spacing;
+        int startX = (800 - totalWidth) / 2;
+        
         for (int i = 0; i < 3; i++) {
-            int x = (800 - (3 * buttonWidth + 2 * spacing)) / 2 + i * (buttonWidth + spacing);
+            int x = startX + i * (buttonWidth + spacing);
             menuButtons.get(i).bounds = new Rectangle(x, startY, buttonWidth, buttonHeight);
         }
         
-        // Special buttons below
-        int specialButtonWidth = 180;
-        int specialStartX = (800 - (2 * specialButtonWidth + spacing)) / 2;
-        menuButtons.get(3).bounds = new Rectangle(specialStartX, startY + buttonHeight + 30, 
-                                                specialButtonWidth, 60);
-        menuButtons.get(4).bounds = new Rectangle(specialStartX + specialButtonWidth + spacing, 
-                                                startY + buttonHeight + 30, specialButtonWidth, 60);
+        // Special buttons below with more spacing
+        int specialButtonWidth = 160;
+        int specialSpacing = 40;
+        int specialTotalWidth = 2 * specialButtonWidth + specialSpacing;
+        int specialStartX = (800 - specialTotalWidth) / 2;
+        int specialY = startY + buttonHeight + 40; // More vertical spacing
+        
+        menuButtons.get(3).bounds = new Rectangle(specialStartX, specialY, 
+                                                specialButtonWidth, 55);
+        menuButtons.get(4).bounds = new Rectangle(specialStartX + specialButtonWidth + specialSpacing, 
+                                                specialY, specialButtonWidth, 55);
     }
     
     /**
