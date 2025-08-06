@@ -3,6 +3,7 @@ package com.skillparty.towerblox.ui;
 import com.skillparty.towerblox.game.GameEngine;
 import com.skillparty.towerblox.game.GameState;
 import com.skillparty.towerblox.game.DifficultyLevel;
+import com.skillparty.towerblox.game.MovementRecorder;
 import com.skillparty.towerblox.ui.components.FontManager;
 import com.skillparty.towerblox.utils.Constants;
 
@@ -24,6 +25,7 @@ public class GameWindow extends JFrame implements GameEngine.GameStateListener {
     private GamePanel gamePanel;
     private ScorePanel scorePanel;
     private HighScorePanel highScorePanel;
+    private MovementPanel movementPanel;
     
     // Game engine
     private GameEngine gameEngine;
@@ -95,12 +97,14 @@ public class GameWindow extends JFrame implements GameEngine.GameStateListener {
         gamePanel = new GamePanel(this);
         scorePanel = new ScorePanel(this);
         highScorePanel = new HighScorePanel(this);
+        movementPanel = new MovementPanel(this);
         
         // Add panels to card layout
         mainPanel.add(menuPanel, "MENU");
         mainPanel.add(gamePanel, "GAME");
         mainPanel.add(scorePanel, "SCORE");
         mainPanel.add(highScorePanel, "HIGH_SCORES");
+        mainPanel.add(movementPanel, "MOVEMENTS");
     }
     
     /**
@@ -192,6 +196,41 @@ public class GameWindow extends JFrame implements GameEngine.GameStateListener {
     public void showHighScores() {
         highScorePanel.refreshScores();
         showPanel("HIGH_SCORES");
+    }
+    
+    /**
+     * Shows the movement recorder
+     */
+    public void showMovements() {
+        // Conectar el MovementRecorder del GameEngine con el MovementPanel
+        if (gameEngine != null && movementPanel != null) {
+            System.out.println("🔗 Conectando MovementRecorder...");
+            MovementRecorder recorder = gameEngine.getMovementRecorder();
+            if (recorder != null) {
+                movementPanel.setMovementRecorder(recorder);
+                System.out.println("✅ MovementRecorder conectado exitosamente");
+            } else {
+                System.out.println("❌ GameEngine.getMovementRecorder() devolvió null");
+            }
+        } else {
+            System.out.println("❌ GameEngine o MovementPanel son null");
+        }
+        showPanel("MOVEMENTS");
+        
+        // Asegurar que el MovementPanel tenga el foco para recibir eventos de teclado
+        SwingUtilities.invokeLater(() -> {
+            if (movementPanel != null) {
+                movementPanel.requestFocusInWindow();
+                System.out.println("🎯 Foco solicitado para MovementPanel");
+            }
+        });
+    }
+    
+    /**
+     * Shows the main menu
+     */
+    public void showMenu() {
+        showPanel("MENU");
     }
     
     /**

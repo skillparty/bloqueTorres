@@ -110,8 +110,12 @@ public class BlockDropAnimation {
         g2d.scale(scaleX, scaleY);
         g2d.translate(-block.getWidth() / 2.0, -block.getHeight() / 2.0);
         
-        // Renderizar el bloque con efectos de brillo
-        renderBlockWithEffects(g2d);
+        // Renderizar el bloque con efectos de brillo - TEMPORALMENTE DESHABILITADO
+        // renderBlockWithEffects(g2d);
+        
+        // Renderizar bloque simple sin efectos
+        g2d.setColor(block.getColor());
+        g2d.fillRect(0, 0, (int)block.getWidth(), (int)block.getHeight());
         
         // Restaurar transformación
         g2d.setTransform(originalTransform);
@@ -136,8 +140,9 @@ public class BlockDropAnimation {
         
         // Renderizar resplandor exterior
         if (glowIntensity > 0.3) {
+            int alpha = Math.min(255, Math.max(0, (int)(100 * glowIntensity)));
             g2d.setColor(new Color(glowColor.getRed(), glowColor.getGreen(), 
-                                  glowColor.getBlue(), (int)(100 * glowIntensity)));
+                                  glowColor.getBlue(), alpha));
             g2d.fillRoundRect(-2, -2, (int)block.getWidth() + 4, 
                              (int)block.getHeight() + 4, 8, 8);
         }
@@ -240,7 +245,7 @@ public class BlockDropAnimation {
                 float alpha = Math.min(p1.alpha, p2.alpha);
                 if (alpha <= 0) continue;
                 
-                g2d.setColor(new Color(255, 255, 255, (int)(alpha * 100)));
+                g2d.setColor(new Color(255, 255, 255, Math.min(255, Math.max(0, (int)(alpha * 100)))));
                 g2d.setStroke(new BasicStroke(3 * alpha));
                 g2d.drawLine((int)p1.x, (int)(p1.y - cameraY), 
                            (int)p2.x, (int)(p2.y - cameraY));
@@ -329,9 +334,10 @@ public class BlockDropAnimation {
                 double vx = Math.cos(angle) * speed * (random.nextBoolean() ? 1 : -1);
                 double vy = -Math.sin(angle) * speed;
                 
-                Color color = new Color(200 + random.nextInt(55), 
-                                       150 + random.nextInt(105),
-                                       100 + random.nextInt(55));
+                Color color = new Color(
+                    Math.min(255, 200 + random.nextInt(55)), 
+                    Math.min(255, 150 + random.nextInt(105)),
+                    Math.min(255, 100 + random.nextInt(55)));
                 
                 particles.add(new Particle(x, y, vx, vy, color, 1000 + random.nextInt(500)));
             }
@@ -352,7 +358,7 @@ public class BlockDropAnimation {
             for (Particle p : particles) {
                 float alpha = (float)p.life / p.maxLife;
                 Color color = new Color(p.color.getRed(), p.color.getGreen(), 
-                                       p.color.getBlue(), (int)(alpha * 255));
+                                       p.color.getBlue(), Math.min(255, Math.max(0, (int)(alpha * 255))));
                 g2d.setColor(color);
                 g2d.fillOval((int)(p.x - p.size), (int)(p.y - cameraY - p.size), 
                            (int)(p.size * 2), (int)(p.size * 2));

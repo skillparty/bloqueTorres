@@ -6,13 +6,15 @@ import com.skillparty.towerblox.game.physics.Tower;
 import com.skillparty.towerblox.score.ScoreManager;
 import com.skillparty.towerblox.score.ScoreStorage;
 import com.skillparty.towerblox.score.HighScore;
-import com.skillparty.towerblox.ui.components.CityBackground;
+// import com.skillparty.towerblox.ui.components.CityBackground;
 import com.skillparty.towerblox.effects.AdvancedFeaturesManager;
 import com.skillparty.towerblox.audio.SoundManager;
 
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.BasicStroke;
+import java.awt.FontMetrics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.Random;
@@ -40,9 +42,10 @@ public class GameEngine implements KeyListener {
     private ScoreManager scoreManager;
     private ScoreStorage scoreStorage;
     private Random random;
-    private CityBackground cityBackground;
+    // private CityBackground cityBackground;
     private AdvancedFeaturesManager advancedFeatures;
     private SoundManager soundManager;
+    private MovementRecorder movementRecorder;
     
     // Camera system for following the tower
     private double cameraY = 0; // Camera offset (negative values move view up)
@@ -101,9 +104,17 @@ public class GameEngine implements KeyListener {
         this.crane = new Crane(GAME_WIDTH / 2, 50, GAME_WIDTH);
         this.currentDifficulty = DifficultyLevel.NORMAL;
         this.scoreManager = new ScoreManager(currentDifficulty);
-        this.cityBackground = new CityBackground(GAME_WIDTH, GAME_HEIGHT, GROUND_LEVEL);
+        // this.cityBackground = new CityBackground(GAME_WIDTH, GAME_HEIGHT, GROUND_LEVEL);
         this.advancedFeatures = new AdvancedFeaturesManager();
         this.soundManager = new SoundManager();
+        this.movementRecorder = new MovementRecorder();
+        System.out.println("🎮 MovementRecorder creado en GameEngine");
+        
+        // Conectar el MovementRecorder con la grúa
+        if (crane != null) {
+            crane.setMovementRecorder(movementRecorder);
+            System.out.println("🏗️ MovementRecorder conectado a la grúa");
+        }
         
         resetGameState();
     }
@@ -230,9 +241,9 @@ public class GameEngine implements KeyListener {
         }
         
         // Update city background
-        if (cityBackground != null) {
-            cityBackground.update();
-        }
+        // if (cityBackground != null) {
+        //     cityBackground.update();
+        // }
         
         // Update advanced features (particle effects, etc.)
         if (advancedFeatures != null) {
@@ -276,18 +287,18 @@ public class GameEngine implements KeyListener {
         g2d.translate(0, cameraY);
         
         // Render dynamic city background
-        if (cityBackground != null) {
-            int towerHeight = tower != null ? tower.getHeight() : 0;
-            cityBackground.render(g2d, towerHeight, cameraY);
-        } else {
-            // Fallback background
-            g2d.setColor(new Color(135, 206, 235)); // Sky blue
-            g2d.fillRect(0, (int)-cameraY, GAME_WIDTH, GAME_HEIGHT);
-            
-            // Draw ground
-            g2d.setColor(new Color(34, 139, 34)); // Forest green
-            g2d.fillRect(0, GROUND_LEVEL, GAME_WIDTH, GAME_HEIGHT - GROUND_LEVEL);
-        }
+        // if (cityBackground != null) {
+        //     int towerHeight = tower != null ? tower.getHeight() : 0;
+        //     cityBackground.render(g2d, towerHeight, cameraY);
+        // } else {
+        // Fallback background
+        g2d.setColor(new Color(135, 206, 235)); // Sky blue
+        g2d.fillRect(0, (int)-cameraY, GAME_WIDTH, GAME_HEIGHT);
+        
+        // Draw ground
+        g2d.setColor(new Color(34, 139, 34)); // Forest green
+        g2d.fillRect(0, GROUND_LEVEL, GAME_WIDTH, GAME_HEIGHT - GROUND_LEVEL);
+        // }
         
         // Render game objects (they will be affected by camera)
         if (tower != null) {
@@ -317,20 +328,168 @@ public class GameEngine implements KeyListener {
     }
 
     /**
-     * Renders game UI elements - FINAL CLEAN VERSION
+     * Renderiza UI del juego con información de desafío mejorada
      */
     private void renderGameUI(Graphics2D g2d) {
-        // Set font for better visibility
-        g2d.setFont(new Font("Monospaced", Font.BOLD, 14));
+        // Información esencial con mejor visibilidad
+        g2d.setFont(new Font("Arial", Font.BOLD, 16));
         g2d.setColor(Color.WHITE);
         
-        // Essential game info only
-        g2d.drawString("Score: " + scoreManager.getCurrentScore(), 10, 25);
-        g2d.drawString("Height: " + tower.getHeight(), 10, 45);
-        g2d.drawString("Lives: " + lives, 10, 65);
+        // Fondo semi-transparente para mejor legibilidad
+        g2d.setColor(new Color(0, 0, 0, 150));
+        g2d.fillRoundRect(5, 5, 250, 120, 10, 10);
         
-        // Controls
-        g2d.drawString("SPACE = Drop Block", GAME_WIDTH / 2 - 60, GAME_HEIGHT - 20);
+        g2d.setColor(Color.WHITE);
+        g2d.drawString("Score: " + scoreManager.getCurrentScore(), 15, 25);
+        g2d.drawString("Height: " + tower.getHeight() + "/163", 15, 45);
+        
+        // Vidas con iconos visuales
+        g2d.drawString("Lives: ", 15, 65);
+        for (int i = 0; i < MAX_LIVES; i++) {
+            g2d.setColor(i < lives ? Color.RED : Color.DARK_GRAY);
+            g2d.fillOval(80 + i * 20, 55, 12, 12);
+        }
+        
+        // NUEVO: Información de desafío
+        g2d.setColor(Color.YELLOW);
+        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+        
+        // Patrón de movimiento actual
+        String pattern = getMovementPatternName(tower.getHeight());
+        g2d.drawString("Pattern: " + pattern, 15, 85);
+        
+        // Velocidad actual
+        double speedMultiplier = crane.getSpeed() / crane.getBaseSpeed();
+        g2d.drawString(String.format("Speed: %.1fx", speedMultiplier), 15, 100);
+        
+        // Rango de movimiento
+        double rangePercent = (crane.getSwingRange() / (GAME_WIDTH * 0.3)) * 100;
+        g2d.drawString(String.format("Range: %.0f%%", rangePercent), 15, 115);
+        
+        // NUEVO: Indicador de timing perfecto
+        renderTimingIndicator(g2d);
+        
+        // NUEVO: Mini-mapa de la torre
+        renderTowerMinimap(g2d);
+        
+        // Controles mejorados
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 14));
+        g2d.drawString("SPACE = Drop Block | P = Pause | ESC = Menu", GAME_WIDTH / 2 - 150, GAME_HEIGHT - 20);
+    }
+    
+    /**
+     * Obtiene el nombre del patrón de movimiento actual
+     */
+    private String getMovementPatternName(int towerHeight) {
+        if (towerHeight <= 10) return "STEADY";
+        if (towerHeight <= 25) return "ACCELERATING";
+        if (towerHeight <= 50) return "ERRATIC";
+        if (towerHeight <= 75) return "PRECISION";
+        if (towerHeight <= 100) return "CHAOTIC";
+        return "EXTREME";
+    }
+    
+    /**
+     * Renderiza un indicador de timing perfecto
+     */
+    private void renderTimingIndicator(Graphics2D g2d) {
+        // Posición en la esquina superior derecha
+        int x = GAME_WIDTH - 150;
+        int y = 30;
+        
+        // Fondo
+        g2d.setColor(new Color(0, 0, 0, 150));
+        g2d.fillRoundRect(x - 10, y - 20, 140, 40, 8, 8);
+        
+        // Calcular si estamos en zona de timing perfecto
+        double craneX = crane.getX();
+        double centerX = GAME_WIDTH / 2.0;
+        double distance = Math.abs(craneX - centerX);
+        double maxDistance = crane.getSwingRange();
+        
+        // Zona perfecta es el 20% central
+        boolean inPerfectZone = distance < (maxDistance * 0.2);
+        
+        // Indicador visual
+        g2d.setColor(inPerfectZone ? Color.GREEN : Color.RED);
+        g2d.fillOval(x, y - 10, 20, 20);
+        
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+        g2d.drawString(inPerfectZone ? "PERFECT!" : "TIMING", x + 25, y);
+        
+        // Barra de precisión
+        int barWidth = 80;
+        int barX = x + 25;
+        int barY = y + 8;
+        
+        g2d.setColor(Color.DARK_GRAY);
+        g2d.fillRect(barX, barY, barWidth, 4);
+        
+        // Zona perfecta en la barra
+        int perfectStart = barX + barWidth * 2 / 5;
+        int perfectWidth = barWidth / 5;
+        g2d.setColor(new Color(0, 255, 0, 100));
+        g2d.fillRect(perfectStart, barY, perfectWidth, 4);
+        
+        // Posición actual
+        int currentPos = barX + (int)((distance / maxDistance) * (barWidth / 2));
+        if (craneX < centerX) currentPos = barX + barWidth / 2 - (int)((distance / maxDistance) * (barWidth / 2));
+        else currentPos = barX + barWidth / 2 + (int)((distance / maxDistance) * (barWidth / 2));
+        
+        g2d.setColor(Color.YELLOW);
+        g2d.fillRect(currentPos - 1, barY - 2, 2, 8);
+    }
+    
+    /**
+     * Renderiza un mini-mapa de la torre
+     */
+    private void renderTowerMinimap(Graphics2D g2d) {
+        if (tower.isEmpty()) return;
+        
+        int mapX = GAME_WIDTH - 60;
+        int mapY = 100;
+        int mapWidth = 50;
+        int mapHeight = 200;
+        
+        // Fondo del mini-mapa
+        g2d.setColor(new Color(0, 0, 0, 150));
+        g2d.fillRoundRect(mapX - 5, mapY - 5, mapWidth + 10, mapHeight + 10, 8, 8);
+        
+        // Borde
+        g2d.setColor(Color.WHITE);
+        g2d.setStroke(new BasicStroke(1));
+        g2d.drawRoundRect(mapX - 5, mapY - 5, mapWidth + 10, mapHeight + 10, 8, 8);
+        
+        // Dibujar bloques de la torre (últimos 20)
+        int towerHeight = tower.getHeight();
+        int startBlock = Math.max(0, towerHeight - 20);
+        
+        for (int i = startBlock; i < towerHeight; i++) {
+            int blockY = mapY + mapHeight - ((i - startBlock + 1) * (mapHeight / 20));
+            
+            // Color según estabilidad del bloque
+            Block block = tower.getBlocks().get(i);
+            double stability = block.getStability();
+            Color blockColor;
+            if (stability >= 0.9) blockColor = Color.GREEN;
+            else if (stability >= 0.7) blockColor = Color.YELLOW;
+            else if (stability >= 0.5) blockColor = Color.ORANGE;
+            else blockColor = Color.RED;
+            
+            g2d.setColor(blockColor);
+            g2d.fillRect(mapX + 5, blockY, mapWidth - 10, mapHeight / 20 - 1);
+        }
+        
+        // Indicador de posición de la grúa
+        g2d.setColor(Color.CYAN);
+        g2d.fillRect(mapX + 2, mapY - 15, mapWidth - 4, 3);
+        
+        // Etiqueta
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+        g2d.drawString("Tower", mapX, mapY - 20);
     }
 
     /**
@@ -474,6 +633,11 @@ public class GameEngine implements KeyListener {
         
         Block newBlock = new Block(crane.getX() - width/2, crane.getY() + 60, width, height, blockColor, blockType);
         crane.setCurrentBlock(newBlock);
+        
+        // NUEVO: Iniciar reproducción de patrón grabado si hay patrones disponibles
+        if (movementRecorder != null && !movementRecorder.getSavedPatterns().isEmpty() && !movementRecorder.isReplaying()) {
+            movementRecorder.startNextReplay();
+        }
     }
     
     /**
@@ -632,68 +796,177 @@ public class GameEngine implements KeyListener {
     }
     
     /**
-     * Updates the camera system to follow the crane and block - FIXED FOR VISIBILITY
+     * Sistema de cámara inteligente que sigue perfectamente la acción
+     * El corazón visual del juego - mantiene la tensión y el enfoque
      */
     private void updateCamera() {
-        if (tower == null || tower.isEmpty()) {
+        if (tower == null) {
             return;
         }
         
         int towerHeight = tower.getHeight();
         
-        // Start moving camera when tower reaches trigger height
-        if (towerHeight >= CAMERA_TRIGGER_HEIGHT) {
+        // Activar cámara más temprano para mejor seguimiento
+        if (towerHeight >= 3) { // Reducido de 7 a 3
             if (!cameraActivated) {
                 cameraActivated = true;
+                cameraActivationTime = System.currentTimeMillis();
             }
             
-            // FIXED: Camera prioritizes following the crane and block
-            Block topBlock = tower.getTopBlock();
-            if (topBlock != null) {
-                double towerTop = topBlock.getY();
-                double craneY = crane.getY();
-                
-                // Get the block position (crane + 60)
-                double blockY = craneY + 60;
-                
-                // Camera should keep the block visible at 35% from top of screen
-                double desiredViewHeight = GAME_HEIGHT * 0.35;
-                targetCameraY = desiredViewHeight - blockY;
-                
-                // Ensure progressive upward movement (more aggressive for high towers)
-                double minCameraY;
-                if (towerHeight <= 30) {
-                    minCameraY = (towerHeight - CAMERA_TRIGGER_HEIGHT) * 30;
-                } else {
-                    // For very high towers, increase the camera movement speed
-                    minCameraY = (towerHeight - CAMERA_TRIGGER_HEIGHT) * 45; // Increased from 30 to 45
-                }
-                targetCameraY = Math.max(targetCameraY, minCameraY);
-                
-                // Ensure the tower top is also visible (not below 85% of screen)
-                double maxCameraForTower = desiredViewHeight - towerTop + (GAME_HEIGHT * 0.5);
-                targetCameraY = Math.min(targetCameraY, maxCameraForTower);
+            // NUEVO: Sistema de cámara predictiva que anticipa el movimiento
+            double craneY = crane.getY();
+            double craneX = crane.getX();
+            
+            // Calcular posición del bloque actual o futuro
+            Block currentBlock = crane.getCurrentBlock();
+            double blockY = craneY + 60; // Posición del bloque en la grúa
+            
+            // NUEVO: Predicción de trayectoria si el bloque está cayendo
+            if (currentBlock != null && currentBlock.isDropped()) {
+                // Predecir dónde estará el bloque en los próximos frames
+                double futureY = currentBlock.getY() + currentBlock.getVelocityY() * 0.5; // 0.5 segundos adelante
+                blockY = Math.min(blockY, futureY); // Usar la posición más baja
             }
+            
+            // NUEVO: Cámara dinámica que se adapta al contexto
+            CameraMode mode = determineCameraMode(towerHeight, currentBlock);
+            targetCameraY = calculateCameraPosition(mode, craneY, blockY, towerHeight);
+            
+            // NUEVO: Suavizado adaptativo según la situación
+            double cameraSpeed = calculateCameraSpeed(mode, towerHeight);
+            
+            // NUEVO: Compensación por movimiento horizontal de la grúa
+            double horizontalInfluence = calculateHorizontalInfluence(craneX);
+            targetCameraY += horizontalInfluence;
+            
+            // Aplicar movimiento de cámara
+            cameraY += (targetCameraY - cameraY) * cameraSpeed;
+            
         } else {
+            // Transición suave al inicio
             targetCameraY = 0;
             cameraActivated = false;
+            cameraY += (targetCameraY - cameraY) * 0.1;
         }
         
-        // Faster camera movement for better responsiveness
-        // Adjust camera speed based on tower height for better tracking
-        double cameraSpeed = 0.15;
-        if (towerHeight > 30) {
-            cameraSpeed = 0.25; // Increased speed for high towers
-        } else if (towerHeight > 20) {
-            cameraSpeed = 0.20; // Moderate increase for mid-high towers
-        }
-        
-        cameraY += (targetCameraY - cameraY) * cameraSpeed;
-        
-        // Snap to target if very close
-        if (Math.abs(targetCameraY - cameraY) < 1.0) {
+        // Snap final para evitar micro-movimientos
+        if (Math.abs(targetCameraY - cameraY) < 0.5) {
             cameraY = targetCameraY;
         }
+    }
+    
+    /**
+     * Modos de cámara según el contexto del juego
+     */
+    private enum CameraMode {
+        FOLLOWING,      // Siguiendo la grúa normalmente
+        TRACKING_DROP,  // Siguiendo un bloque que cae
+        ANTICIPATING,   // Anticipando el próximo movimiento
+        PRECISION,      // Modo de precisión para torres altas
+        DRAMATIC        // Modo dramático para momentos críticos
+    }
+    
+    /**
+     * Determina el modo de cámara apropiado
+     */
+    private CameraMode determineCameraMode(int towerHeight, Block currentBlock) {
+        // Bloque cayendo - prioridad máxima
+        if (currentBlock != null && currentBlock.isDropped()) {
+            return CameraMode.TRACKING_DROP;
+        }
+        
+        // Torres muy altas requieren precisión
+        if (towerHeight > 75) {
+            return CameraMode.PRECISION;
+        }
+        
+        // Momentos críticos (pocas vidas, torre inestable)
+        if (lives <= 1 || (tower != null && !tower.isEmpty() && tower.getInstabilityScore() > 0.7)) {
+            return CameraMode.DRAMATIC;
+        }
+        
+        // Anticipar próximo movimiento
+        if (crane.isAnimating()) {
+            return CameraMode.ANTICIPATING;
+        }
+        
+        // Modo normal
+        return CameraMode.FOLLOWING;
+    }
+    
+    /**
+     * Calcula la posición ideal de la cámara según el modo
+     */
+    private double calculateCameraPosition(CameraMode mode, double craneY, double blockY, int towerHeight) {
+        double screenCenter = GAME_HEIGHT * 0.5;
+        double upperThird = GAME_HEIGHT * 0.35;
+        double lowerThird = GAME_HEIGHT * 0.65;
+        
+        switch (mode) {
+            case FOLLOWING:
+                // Mantener la grúa en el tercio superior
+                return upperThird - craneY;
+                
+            case TRACKING_DROP:
+                // Seguir el bloque que cae, manteniéndolo centrado
+                return screenCenter - blockY;
+                
+            case ANTICIPATING:
+                // Posición intermedia entre grúa y torre
+                double towerTop = tower.isEmpty() ? GROUND_LEVEL : tower.getTopBlock().getY();
+                double midPoint = (craneY + towerTop) / 2;
+                return screenCenter - midPoint;
+                
+            case PRECISION:
+                // Zoom más cercano para torres altas
+                return upperThird - craneY + (towerHeight - 75) * 2;
+                
+            case DRAMATIC:
+                // Ángulo más dinámico
+                return lowerThird - blockY;
+                
+            default:
+                return upperThird - craneY;
+        }
+    }
+    
+    /**
+     * Calcula la velocidad de la cámara según el contexto
+     */
+    private double calculateCameraSpeed(CameraMode mode, int towerHeight) {
+        double baseSpeed = 0.15;
+        
+        switch (mode) {
+            case FOLLOWING:
+                return baseSpeed + (towerHeight * 0.002); // Más rápida con altura
+                
+            case TRACKING_DROP:
+                return 0.35; // Muy rápida para seguir bloques cayendo
+                
+            case ANTICIPATING:
+                return 0.25; // Rápida para anticipar
+                
+            case PRECISION:
+                return 0.08; // Muy suave para precisión
+                
+            case DRAMATIC:
+                return 0.12; // Moderada para efecto dramático
+                
+            default:
+                return baseSpeed;
+        }
+    }
+    
+    /**
+     * Calcula la influencia del movimiento horizontal en la cámara
+     */
+    private double calculateHorizontalInfluence(double craneX) {
+        // La cámara se inclina ligeramente según la posición horizontal de la grúa
+        double screenCenter = GAME_WIDTH / 2.0;
+        double horizontalOffset = (craneX - screenCenter) / GAME_WIDTH;
+        
+        // Efecto sutil de paralaje
+        return horizontalOffset * 15; // Máximo 15 píxeles de influencia
     }
 
     /**
@@ -823,6 +1096,7 @@ public class GameEngine implements KeyListener {
     public boolean isRunning() { return running; }
     public boolean isPaused() { return paused; }
     public ScoreManager getScoreManager() { return scoreManager; }
+    public MovementRecorder getMovementRecorder() { return movementRecorder; }
     public ScoreStorage getScoreStorage() { return scoreStorage; }
     public Tower getTower() { return tower; }
     public Crane getCrane() { return crane; }

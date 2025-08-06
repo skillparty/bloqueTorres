@@ -1,7 +1,7 @@
 package com.skillparty.towerblox.ui;
 
 import com.skillparty.towerblox.game.GameEngine;
-import com.skillparty.towerblox.ui.components.TowerStatsPanel;
+import com.skillparty.towerblox.ui.components.TowerVisualizationPanel;
 // import com.skillparty.towerblox.ui.components.FontManager;
 // import com.skillparty.towerblox.utils.Constants;
 
@@ -22,7 +22,7 @@ public class GamePanel extends JPanel implements KeyListener {
     private GameWindow parentWindow;
     // private FontManager fontManager;
     private GameEngine gameEngine;
-    private TowerStatsPanel towerStatsPanel;
+    private TowerVisualizationPanel towerVisualizationPanel;
     
     // Game state display
     private int currentScore = 0;
@@ -159,19 +159,19 @@ public class GamePanel extends JPanel implements KeyListener {
     }
     
     /**
-     * Initializes the tower statistics panel
+     * Initializes the tower visualization panel
      */
     private void initializeTowerStatsPanel() {
-        // Remove existing stats panel if any
-        if (towerStatsPanel != null) {
-            remove(towerStatsPanel);
+        // Remove existing visualization panel if any
+        if (towerVisualizationPanel != null) {
+            remove(towerVisualizationPanel);
         }
         
-        // Create new stats panel
-        towerStatsPanel = new TowerStatsPanel(gameEngine);
+        // Create new visualization panel
+        towerVisualizationPanel = new TowerVisualizationPanel(gameEngine);
         
         // Add to the left side
-        add(towerStatsPanel, BorderLayout.WEST);
+        add(towerVisualizationPanel, BorderLayout.WEST);
         
         // Revalidate to update layout
         revalidate();
@@ -267,55 +267,19 @@ public class GamePanel extends JPanel implements KeyListener {
     }
     
     /**
-     * Renders the game UI elements
+     * Renders the simplified game UI
      */
     private void renderGameUI(Graphics2D g2d) {
-        // Score panel background
-        g2d.setColor(new Color(0, 0, 0, 150));
-        g2d.fillRect(10, 10, 200, 120);
-        g2d.setColor(Color.WHITE);
-        g2d.drawRect(10, 10, 200, 120);
-        
-        // Game statistics
-        g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-        g2d.setColor(Color.WHITE);
-        
-        int y = 30;
-        g2d.drawString("Puntuación: " + currentScore, 20, y);
-        
-        if (gameEngine.getScoreManager() != null) {
-            y += 20;
-            g2d.drawString("Altura: " + gameEngine.getTower().getHeight(), 20, y);
-            
-            y += 20;
-            g2d.drawString("Bloques: " + gameEngine.getScoreManager().getBlocksPlaced(), 20, y);
-            
-            y += 20;
-            g2d.drawString("Combo: " + gameEngine.getScoreManager().getCurrentCombo(), 20, y);
-            
-            y += 20;
-            g2d.drawString("Dificultad: " + gameEngine.getCurrentDifficulty().getDisplayName(), 20, y);
-        }
-        
-        // Performance info (top right)
-        if (renderFPS > 0) {
-            g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-            g2d.setColor(Color.LIGHT_GRAY);
-            g2d.drawString(String.format("FPS: %.1f", renderFPS), getWidth() - 80, 20);
-            
-            if (gameEngine.getFPS() > 0) {
-                g2d.drawString(String.format("Game: %.1f", gameEngine.getFPS()), getWidth() - 80, 35);
-            }
-        }
-        
         // Controls help (bottom)
         g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         g2d.setColor(Color.LIGHT_GRAY);
-        String controls = "ESPACIO: Soltar bloque | P: Pausa | ESC: Menú";
+        String controls = "ESPACIO: Soltar | P: Pausa | ESC: Menú";
         FontMetrics fm = g2d.getFontMetrics();
         int controlsWidth = fm.stringWidth(controls);
         g2d.drawString(controls, (getWidth() - controlsWidth) / 2, getHeight() - 10);
     }
+    
+
     
     /**
      * Renders visual effects

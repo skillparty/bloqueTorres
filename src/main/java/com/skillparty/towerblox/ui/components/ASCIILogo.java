@@ -29,12 +29,13 @@ public class ASCIILogo {
     private static final String VERSION_TEXT = "by joseAlejandro";
     private static final String SUBTITLE = "Build the highest tower!";
 
-    // Linux terminal colors
-    private static final Color BACKGROUND_COLOR = new Color(0, 0, 0);        // Black
-    private static final Color PRIMARY_COLOR = new Color(0, 255, 0);         // Bright Green
-    private static final Color SECONDARY_COLOR = new Color(0, 200, 0);       // Dark Green
-    private static final Color VERSION_COLOR = new Color(128, 128, 128);     // Gray
-    private static final Color SUBTITLE_COLOR = new Color(255, 255, 0);      // Yellow
+    // Professional corporate colors matching the menu
+    private static final Color BACKGROUND_COLOR = new Color(15, 23, 42);     // Dark Slate
+    private static final Color PRIMARY_COLOR = new Color(59, 130, 246);      // Professional Blue
+    private static final Color SECONDARY_COLOR = new Color(16, 185, 129);    // Success Green
+    private static final Color ACCENT_COLOR = new Color(99, 102, 241);       // Indigo
+    private static final Color VERSION_COLOR = new Color(148, 163, 184);     // Light Gray
+    private static final Color SUBTITLE_COLOR = new Color(245, 158, 11);     // Amber
 
     private FontManager fontManager;
     private int width;
@@ -83,22 +84,35 @@ public class ASCIILogo {
 
         int currentY = y;
 
-        // Render main logo lines
+        // Render main logo lines with professional gradient effect
         g2d.setFont(logoFont);
         for (int i = 0; i < LOGO_LINES.length; i++) {
             String line = LOGO_LINES[i];
             
-            // Alternate colors for depth effect
+            // Professional color scheme with gradient effect
+            Color lineColor;
             if (i < 6) {
-                g2d.setColor(PRIMARY_COLOR);
+                // "JAVA" part - Blue to Indigo gradient
+                float ratio = (float) i / 5;
+                lineColor = blendColors(PRIMARY_COLOR, ACCENT_COLOR, ratio);
             } else {
-                g2d.setColor(SECONDARY_COLOR);
+                // "TOWER" part - Green to Blue gradient
+                float ratio = (float) (i - 6) / 6;
+                lineColor = blendColors(SECONDARY_COLOR, PRIMARY_COLOR, ratio);
             }
+            
+            g2d.setColor(lineColor);
             
             // Center the line
             int lineWidth = logoMetrics.stringWidth(line);
             int lineX = x + (width - lineWidth) / 2;
             
+            // Add subtle shadow for depth
+            g2d.setColor(new Color(0, 0, 0, 100));
+            g2d.drawString(line, lineX + 1, currentY + 1);
+            
+            // Draw main text
+            g2d.setColor(lineColor);
             g2d.drawString(line, lineX, currentY);
             currentY += logoMetrics.getHeight();
         }
@@ -135,13 +149,18 @@ public class ASCIILogo {
             g2d.setColor(BACKGROUND_COLOR);
             g2d.fillRect(x - 20, y - 30, width + 40, height + 40);
             
-            // Draw border like a terminal window
-            g2d.setColor(PRIMARY_COLOR);
-            g2d.drawRect(x - 20, y - 30, width + 40, height + 40);
+            // Draw professional border with gradient
+            g2d.setColor(new Color(PRIMARY_COLOR.getRed(), PRIMARY_COLOR.getGreen(), PRIMARY_COLOR.getBlue(), 180));
+            g2d.setStroke(new java.awt.BasicStroke(2));
+            g2d.drawRoundRect(x - 20, y - 30, width + 40, height + 40, 10, 10);
             
-            // Draw terminal title bar
-            g2d.setColor(SECONDARY_COLOR);
-            g2d.fillRect(x - 20, y - 30, width + 40, 25);
+            // Draw modern title bar with gradient
+            java.awt.GradientPaint titleBarGradient = new java.awt.GradientPaint(
+                x - 20, y - 30, SECONDARY_COLOR,
+                x - 20, y - 5, PRIMARY_COLOR
+            );
+            g2d.setPaint(titleBarGradient);
+            g2d.fillRoundRect(x - 20, y - 30, width + 40, 25, 10, 10);
             
             // Terminal window controls (fake)
             g2d.setColor(Color.RED);
@@ -172,6 +191,23 @@ public class ASCIILogo {
      */
     public int getHeight() {
         return height;
+    }
+
+    /**
+     * Blends two colors based on a ratio for gradient effects
+     * @param color1 First color
+     * @param color2 Second color
+     * @param ratio Blend ratio (0.0 = color1, 1.0 = color2)
+     * @return Blended color
+     */
+    private Color blendColors(Color color1, Color color2, float ratio) {
+        ratio = Math.max(0.0f, Math.min(1.0f, ratio)); // Clamp ratio between 0 and 1
+        
+        int red = (int) (color1.getRed() * (1 - ratio) + color2.getRed() * ratio);
+        int green = (int) (color1.getGreen() * (1 - ratio) + color2.getGreen() * ratio);
+        int blue = (int) (color1.getBlue() * (1 - ratio) + color2.getBlue() * ratio);
+        
+        return new Color(red, green, blue);
     }
 
     /**
