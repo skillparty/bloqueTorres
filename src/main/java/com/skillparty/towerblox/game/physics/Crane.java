@@ -15,6 +15,11 @@ public class Crane {
     private int gameWidth;
     private boolean movingRight;
     
+    // Tower Bloxx 2005 style crane movement
+    private double centerX;
+    private double swingRange;
+    private double minX, maxX;
+    
     // Current block being carried
     private Block currentBlock;
     
@@ -29,12 +34,20 @@ public class Crane {
 
     
     public Crane(double startX, double startY, int gameWidth) {
-        this.x = startX;
-        this.y = startY;
         this.gameWidth = gameWidth;
         this.baseSpeed = Constants.CRANE_BASE_SPEED;
         this.speed = baseSpeed;
         this.movingRight = true;
+        
+        // Initialize Tower Bloxx 2005 style movement
+        this.centerX = gameWidth / 2.0; // Center of screen
+        this.swingRange = gameWidth * 0.3; // 30% of screen width swing range
+        this.minX = centerX - swingRange;
+        this.maxX = centerX + swingRange;
+        
+        // Start at center
+        this.x = centerX;
+        this.y = startY;
         
         this.craneWidth = 60;
         this.craneHeight = Constants.CRANE_HEIGHT;
@@ -47,11 +60,18 @@ public class Crane {
      * Updates the crane position and animation
      */
     public void update(long deltaTime) {
-        // Update horizontal movement
-        updateMovement(deltaTime);
+        // Convert long to double for compatibility
+        double dt = deltaTime / 1000.0; // Convert milliseconds to seconds
         
-        // Update claw animation
         craneAnimation.update(deltaTime);
+        
+        // Don't move crane if animation is in progress
+        if (craneAnimation.isAnimating()) {
+            return; // Don't move while animating
+        }
+        
+        // Torre Bloxx 2005 style smooth pendulum movement with acceleration/deceleration
+        updatePendulumMovement(dt);
         
         // Update current block position if carrying one
         if (currentBlock != null && !currentBlock.isDropped()) {
@@ -61,30 +81,67 @@ public class Crane {
     }
     
     /**
-     * Updates crane horizontal movement
+     * Actualiza el movimiento pendular suave como en Tower Bloxx 2005
+     * Con aceleración y desaceleración progresiva en los extremos
      */
-    private void updateMovement(long deltaTime) {
-        if (craneAnimation.isAnimating()) {
-            return; // Don't move while animating
-        }
+    private void updatePendulumMovement(double deltaTime) {
+        // Calcular posición relativa en el rango de movimiento (0 a 1)
+        double relativePos = (x - minX) / (maxX - minX);
         
-        // Calculate movement
-        double movement = speed * (deltaTime / 16.0); // Normalize to ~60fps
+        // Función de velocidad sinusoidal para movimiento más natural
+        // La velocidad es máxima en el centro y mínima en los extremos
+        double velocityMultiplier = Math.sin(relativePos * Math.PI);
+        
+        // Aplicar aceleración/desaceleración en los extremos
+        double distanceFromCenter = Math.abs(relativePos - 0.5) * 2; // 0 = centro, 1 = extremo
+        double accelerationFactor = 1.0 + (1.0 - distanceFromCenter) * 0.5; // Más rápido en el centro
+        
+        // Calcular movimiento final
+        double movement = speed * velocityMultiplier * accelerationFactor * (deltaTime / 16.0);
         
         if (movingRight) {
             x += movement;
-            if (x + craneWidth / 2 >= gameWidth - 20) {
+            // Suave transición en el extremo derecho
+            if (x >= maxX) {
+                x = maxX;
                 movingRight = false;
+                // Pequeña pausa en el extremo para efecto más realista
+                craneAnimation.addPause(100); // 100ms de pausa
             }
         } else {
             x -= movement;
-            if (x - craneWidth / 2 <= 20) {
+            // Suave transición en el extremo izquierdo  
+            if (x <= minX) {
+                x = minX;
                 movingRight = true;
+                // Pequeña pausa en el extremo para efecto más realista
+                craneAnimation.addPause(100); // 100ms de pausa
             }
         }
     }
     
-
+    /**
+     * Updates the swing range based on tower height (Tower Bloxx 2005 mechanics)
+     * Higher towers have smaller swing ranges for increased difficulty
+     */
+    public void updateSwingRange(int towerHeight) {
+        // Base swing range decreases as tower gets taller
+        double baseRange = gameWidth * 0.3; // 30% of screen
+        double reductionFactor = Math.min(towerHeight * 0.01, 0.7); // Max 70% reduction
+        
+        this.swingRange = baseRange * (1.0 - reductionFactor);
+        this.minX = centerX - swingRange;
+        this.maxX = centerX + swingRange;
+        
+        // Ensure current position is within new bounds
+        if (x < minX) {
+            x = minX;
+            movingRight = true;
+        } else if (x > maxX) {
+            x = maxX;
+            movingRight = false;
+        }
+    }
     
     /**
      * Renders the crane with realistic claw animation

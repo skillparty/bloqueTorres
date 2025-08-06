@@ -24,8 +24,8 @@ public class GameEngine implements KeyListener {
     // Game constants
     private static final int TARGET_FPS = 60;
     private static final long FRAME_TIME = 1000 / TARGET_FPS; // milliseconds per frame
-    private static final int GAME_WIDTH = 800;
-    private static final int GAME_HEIGHT = 600;
+    private static final int GAME_WIDTH = 1280;
+    private static final int GAME_HEIGHT = 720;
     private static final int GROUND_LEVEL = GAME_HEIGHT - 50;
     
     // Game state
@@ -196,10 +196,23 @@ public class GameEngine implements KeyListener {
             // Update the current block if it exists and is dropped
             Block currentBlock = crane.getCurrentBlock();
             if (currentBlock != null && currentBlock.isDropped()) {
-                currentBlock.update();
+                // Use enhanced animation update instead of basic update
+                double deltaTimeSeconds = deltaTime / 1000.0;
+                currentBlock.updateWithAnimation(deltaTimeSeconds);
                 
-                // Add falling effects for dropped blocks
-                if (advancedFeatures != null && Math.random() < 0.3) { // 30% chance per frame
+                // Check for landing collisions to trigger landing animation
+                if (tower != null && tower.getHeight() > 0) {
+                    Block topBlock = tower.getTopBlock();
+                    if (topBlock != null && currentBlock.getY() + currentBlock.getHeight() >= topBlock.getY()) {
+                        currentBlock.triggerLanding(topBlock.getY());
+                    }
+                } else if (currentBlock.getY() + currentBlock.getHeight() >= GAME_HEIGHT - 50) {
+                    // Landing on ground
+                    currentBlock.triggerLanding(GAME_HEIGHT - 50);
+                }
+                
+                // Add falling effects for dropped blocks (reduced frequency due to enhanced animation)
+                if (advancedFeatures != null && Math.random() < 0.1) { // Reduced to 10% chance per frame
                     int blockCenterX = (int)(currentBlock.getX() + currentBlock.getWidth() / 2);
                     int blockBottomY = (int)(currentBlock.getY() + currentBlock.getHeight());
                     advancedFeatures.onBlockFalling(blockCenterX, blockBottomY);
@@ -284,10 +297,10 @@ public class GameEngine implements KeyListener {
         if (crane != null) {
             crane.render(g2d);
             
-            // Render the falling block if it exists and is dropped
+            // Render the falling block if it exists and is dropped (with enhanced animation)
             Block currentBlock = crane.getCurrentBlock();
             if (currentBlock != null && currentBlock.isDropped()) {
-                currentBlock.render(g2d);
+                currentBlock.renderWithAnimation(g2d, cameraY);
             }
         }
         
@@ -447,6 +460,11 @@ public class GameEngine implements KeyListener {
         adjustCraneSpeed();
         
         int towerHeight = tower != null ? tower.getHeight() : 0;
+        
+        // Update crane swing range based on tower height (Tower Bloxx 2005 mechanics)
+        if (crane != null) {
+            crane.updateSwingRange(towerHeight);
+        }
         Block.BlockType blockType = determineBlockType(towerHeight);
         Color blockColor = getBlockColorForType(blockType, towerHeight);
         
@@ -597,14 +615,14 @@ public class GameEngine implements KeyListener {
                 if (towerHeight <= 20) {
                     dropDistance = 250 + (towerHeight * 15); // 265-550px for levels 1-20
                 } else {
-                    dropDistance = 550 + ((towerHeight - 20) * 25); // 575+ for levels 21+
+                    dropDistance = 550 + ((towerHeight - 20) * 35); // 575+ for levels 21+ (increased from 25 to 35)
                 }
                 
                 // Position crane above tower with calculated distance
                 double newCraneY = topBlock.getY() - dropDistance;
                 
                 // Allow crane to go very high for tall towers
-                newCraneY = Math.max(newCraneY, -2000);
+                newCraneY = Math.max(newCraneY, -50000); // Increased limit to support towers up to 9999 blocks
                 
                 crane.setY(newCraneY);
                 
@@ -642,8 +660,14 @@ public class GameEngine implements KeyListener {
                 double desiredViewHeight = GAME_HEIGHT * 0.35;
                 targetCameraY = desiredViewHeight - blockY;
                 
-                // Ensure progressive upward movement (more aggressive)
-                double minCameraY = (towerHeight - CAMERA_TRIGGER_HEIGHT) * 30;
+                // Ensure progressive upward movement (more aggressive for high towers)
+                double minCameraY;
+                if (towerHeight <= 30) {
+                    minCameraY = (towerHeight - CAMERA_TRIGGER_HEIGHT) * 30;
+                } else {
+                    // For very high towers, increase the camera movement speed
+                    minCameraY = (towerHeight - CAMERA_TRIGGER_HEIGHT) * 45; // Increased from 30 to 45
+                }
                 targetCameraY = Math.max(targetCameraY, minCameraY);
                 
                 // Ensure the tower top is also visible (not below 85% of screen)
@@ -656,7 +680,15 @@ public class GameEngine implements KeyListener {
         }
         
         // Faster camera movement for better responsiveness
-        cameraY += (targetCameraY - cameraY) * 0.15;
+        // Adjust camera speed based on tower height for better tracking
+        double cameraSpeed = 0.15;
+        if (towerHeight > 30) {
+            cameraSpeed = 0.25; // Increased speed for high towers
+        } else if (towerHeight > 20) {
+            cameraSpeed = 0.20; // Moderate increase for mid-high towers
+        }
+        
+        cameraY += (targetCameraY - cameraY) * cameraSpeed;
         
         // Snap to target if very close
         if (Math.abs(targetCameraY - cameraY) < 1.0) {

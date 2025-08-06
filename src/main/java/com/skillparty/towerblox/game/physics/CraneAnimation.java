@@ -43,6 +43,10 @@ public class CraneAnimation {
         1.0, 0.8, 0.55, 0.3, 0.1, 0.0     // Ease-in curve
     };
     
+    // Pausa en extremos del movimiento pendular
+    private long pauseEndTime = 0;
+    private boolean isPaused = false;
+    
     public CraneAnimation() {
         this.currentState = AnimationState.IDLE;
         this.currentFrame = 0;
@@ -369,6 +373,31 @@ public class CraneAnimation {
     }
     
     /**
+     * Adds a pause for smoother movement transitions
+     * @param pauseDuration duration in milliseconds
+     */
+    public void addPause(int pauseDuration) {
+        isPaused = true;
+        pauseEndTime = System.currentTimeMillis() + pauseDuration;
+    }
+    
+    /**
+     * Checks if crane is currently paused
+     */
+    private boolean checkPause() {
+        if (isPaused) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime >= pauseEndTime) {
+                isPaused = false;
+                pauseEndTime = 0;
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    /**
      * Resets the animation to idle state
      */
     public void reset() {
@@ -376,13 +405,16 @@ public class CraneAnimation {
         currentFrame = 0;
         lastFrameTime = 0;
         animationStartTime = 0;
+        isPaused = false;
+        pauseEndTime = 0;
     }
     
     // Getters
     public AnimationState getCurrentState() { return currentState; }
     public int getCurrentFrame() { return currentFrame; }
     public double getCurrentOpeningRatio() { return getOpeningRatio(); }
-    public boolean isAnimating() { return currentState != AnimationState.IDLE; }
+    public boolean isPaused() { return isPaused; }
+    public boolean isAnimating() { return currentState != AnimationState.IDLE || checkPause(); }
     public boolean isOpening() { return currentState == AnimationState.OPENING; }
     public boolean isClosing() { return currentState == AnimationState.CLOSING; }
     public boolean isFullyOpen() { return currentState == AnimationState.FULLY_OPEN; }

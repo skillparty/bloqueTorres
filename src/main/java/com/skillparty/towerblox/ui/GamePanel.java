@@ -1,8 +1,9 @@
 package com.skillparty.towerblox.ui;
 
 import com.skillparty.towerblox.game.GameEngine;
-import com.skillparty.towerblox.ui.components.FontManager;
-import com.skillparty.towerblox.utils.Constants;
+import com.skillparty.towerblox.ui.components.TowerStatsPanel;
+// import com.skillparty.towerblox.ui.components.FontManager;
+// import com.skillparty.towerblox.utils.Constants;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,8 +20,9 @@ public class GamePanel extends JPanel implements KeyListener {
     private static final long serialVersionUID = 1L;
     
     private GameWindow parentWindow;
-    private FontManager fontManager;
+    // private FontManager fontManager;
     private GameEngine gameEngine;
+    private TowerStatsPanel towerStatsPanel;
     
     // Game state display
     private int currentScore = 0;
@@ -108,7 +110,7 @@ public class GamePanel extends JPanel implements KeyListener {
     
     public GamePanel(GameWindow parentWindow) {
         this.parentWindow = parentWindow;
-        this.fontManager = FontManager.getInstance();
+        // this.fontManager = FontManager.getInstance();
         this.scoreEffects = new ArrayList<>();
         this.comboEffects = new ArrayList<>();
         
@@ -121,9 +123,12 @@ public class GamePanel extends JPanel implements KeyListener {
      */
     private void initializePanel() {
         setBackground(Color.BLACK);
-        setPreferredSize(new Dimension(Constants.GAME_WIDTH, Constants.GAME_HEIGHT));
+        setPreferredSize(new Dimension(800 + 200, 600)); // Increased width for stats panel
         setFocusable(true);
         addKeyListener(this);
+        
+        // Use BorderLayout to position the stats panel
+        setLayout(new BorderLayout());
     }
     
     /**
@@ -146,6 +151,30 @@ public class GamePanel extends JPanel implements KeyListener {
      */
     public void setGameEngine(GameEngine gameEngine) {
         this.gameEngine = gameEngine;
+        
+        // Initialize tower stats panel when game engine is set
+        if (gameEngine != null) {
+            initializeTowerStatsPanel();
+        }
+    }
+    
+    /**
+     * Initializes the tower statistics panel
+     */
+    private void initializeTowerStatsPanel() {
+        // Remove existing stats panel if any
+        if (towerStatsPanel != null) {
+            remove(towerStatsPanel);
+        }
+        
+        // Create new stats panel
+        towerStatsPanel = new TowerStatsPanel(gameEngine);
+        
+        // Add to the left side
+        add(towerStatsPanel, BorderLayout.WEST);
+        
+        // Revalidate to update layout
+        revalidate();
     }
     
     /**
@@ -248,7 +277,7 @@ public class GamePanel extends JPanel implements KeyListener {
         g2d.drawRect(10, 10, 200, 120);
         
         // Game statistics
-        g2d.setFont(fontManager.getGameFont());
+        g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
         g2d.setColor(Color.WHITE);
         
         int y = 30;
@@ -270,7 +299,7 @@ public class GamePanel extends JPanel implements KeyListener {
         
         // Performance info (top right)
         if (renderFPS > 0) {
-            g2d.setFont(fontManager.getSmallFont());
+            g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
             g2d.setColor(Color.LIGHT_GRAY);
             g2d.drawString(String.format("FPS: %.1f", renderFPS), getWidth() - 80, 20);
             
@@ -280,7 +309,7 @@ public class GamePanel extends JPanel implements KeyListener {
         }
         
         // Controls help (bottom)
-        g2d.setFont(fontManager.getSmallFont());
+        g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         g2d.setColor(Color.LIGHT_GRAY);
         String controls = "ESPACIO: Soltar bloque | P: Pausa | ESC: Menú";
         FontMetrics fm = g2d.getFontMetrics();
@@ -294,7 +323,7 @@ public class GamePanel extends JPanel implements KeyListener {
     private void renderEffects(Graphics2D g2d) {
         // Render score effects
         for (ScoreEffect effect : scoreEffects) {
-            g2d.setFont(fontManager.getFont(FontManager.GAME_SIZE + 2, Font.BOLD));
+            g2d.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
             
             // Set color with alpha
             Color color = effect.color;
@@ -339,7 +368,7 @@ public class GamePanel extends JPanel implements KeyListener {
         g2d.fillRect(0, 0, getWidth(), getHeight());
         
         // Pause text
-        g2d.setFont(fontManager.getFont(FontManager.LOGO_SIZE, Font.BOLD));
+        g2d.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
         g2d.setColor(Color.WHITE);
         
         String pauseText = "JUEGO PAUSADO";
@@ -351,7 +380,7 @@ public class GamePanel extends JPanel implements KeyListener {
                       (getHeight() - textHeight) / 2);
         
         // Instructions
-        g2d.setFont(fontManager.getMenuFont());
+        g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 16));
         g2d.setColor(Color.LIGHT_GRAY);
         
         String[] instructions = {
@@ -377,7 +406,7 @@ public class GamePanel extends JPanel implements KeyListener {
         g2d.fillRect(0, 0, getWidth(), getHeight());
         
         // Game Over text
-        g2d.setFont(fontManager.getFont(FontManager.LOGO_SIZE, Font.BOLD));
+        g2d.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
         g2d.setColor(Color.RED);
         
         String gameOverText = "GAME OVER";
@@ -387,7 +416,7 @@ public class GamePanel extends JPanel implements KeyListener {
         g2d.drawString(gameOverText, (getWidth() - textWidth) / 2, getHeight() / 2 - 100);
         
         // Reason and score
-        g2d.setFont(fontManager.getMenuFont());
+        g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 16));
         g2d.setColor(Color.WHITE);
         
         String[] info = {
@@ -417,7 +446,7 @@ public class GamePanel extends JPanel implements KeyListener {
         g2d.setColor(Color.BLACK);
         g2d.fillRect(0, 0, getWidth(), getHeight());
         
-        g2d.setFont(fontManager.getMenuFont());
+        g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 16));
         g2d.setColor(Color.WHITE);
         
         String loadingText = "Cargando juego...";

@@ -1,7 +1,6 @@
 package com.skillparty.towerblox.ui.components;
 
 import java.awt.*;
-import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -15,8 +14,8 @@ public class CityBackground {
     private List<ConstructionElement> constructionElements;
     private Random random;
     private long startTime;
-    private int gameWidth;
-    private int gameHeight;
+    private static final int gameWidth = 1280;
+    private static final int gameHeight = 720;
     private int groundLevel;
     
     // Animation states based on tower height
@@ -269,8 +268,6 @@ public class CityBackground {
     }
     
     public CityBackground(int gameWidth, int gameHeight, int groundLevel) {
-        this.gameWidth = gameWidth;
-        this.gameHeight = gameHeight;
         this.groundLevel = groundLevel;
         this.random = new Random();
         this.startTime = System.currentTimeMillis();
@@ -343,8 +340,8 @@ public class CityBackground {
         float timeOfDay = (towerHeight % 40) / 40.0f; // Cycle every 40 blocks
         AnimationPhase phase = getAnimationPhase(towerHeight);
         
-        // Render sky gradient with extended height for camera movement
-        renderSky(g2d, timeOfDay, cameraY);
+        // CRITICAL FIX: ALWAYS render sky first to prevent black background
+        renderExtendedSky(g2d, timeOfDay, cameraY, towerHeight);
         
         // Render distant mountains/hills
         renderMountains(g2d, timeOfDay, cameraY);
@@ -361,7 +358,8 @@ public class CityBackground {
         }
         
         // Render construction site (visible when camera is not too high)
-        if (cameraY < 400) {
+        // Extended visibility for higher towers
+        if (cameraY < 1500) {
             for (ConstructionElement element : constructionElements) {
                 element.render(g2d);
             }
@@ -378,7 +376,7 @@ public class CityBackground {
             renderDynamicAnimations(g2d, phase, towerHeight, timeOfDay);
         }
         
-        // ENHANCED: Render progressive altitude effects
+        // ENHANCED: Render progressive altitude effects starting at height 15
         if (towerHeight >= 15) {
             renderProgressiveAltitudeEffects(g2d, towerHeight, timeOfDay);
         }
@@ -387,6 +385,8 @@ public class CityBackground {
         if (towerHeight >= 25) {
             renderSpaceEffects(g2d, towerHeight, timeOfDay);
         }
+        
+        // Debug info removed for clean gameplay experience
     }
     
     private void renderSky(Graphics2D g2d, float timeOfDay) {
@@ -525,7 +525,10 @@ public class CityBackground {
         else if (towerHeight <= 50) return AnimationPhase.SKYSCRAPER;
         else if (towerHeight <= 70) return AnimationPhase.STRATOSPHERE;
         else if (towerHeight <= 90) return AnimationPhase.THERMOSPHERE;
-        else return AnimationPhase.EXOSPHERE;
+        else if (towerHeight <= 200) return AnimationPhase.EXOSPHERE;
+        else if (towerHeight <= 500) return AnimationPhase.EXOSPHERE;
+        else if (towerHeight <= 1000) return AnimationPhase.EXOSPHERE;
+        else return AnimationPhase.EXOSPHERE; // Continue exosphere effects for all heights above 90
     }
     
     /**
@@ -1106,6 +1109,189 @@ public class CityBackground {
             g2d.fillOval(gameWidth - 55, groundLevel + 95, 18, 18);
         }
         
+        // Special effects for extremely high towers
+        if (towerHeight >= 1000) {
+            renderExtremeHeightEffects(g2d, time, towerHeight);
+        }
+        
         System.out.println("🌌 EXOSPHERE ACTIVE - Edge of space effects at height " + towerHeight);
+    }
+    
+    /**
+     * Renders special effects for extremely high towers (1000+ blocks)
+     * Adds cosmic string effects and enhanced space phenomena
+     */
+    private void renderExtremeHeightEffects(Graphics2D g2d, long time, int towerHeight) {
+        // Cosmic strings - rare but powerful phenomena
+        if (Math.random() < 0.005) { // Very rare effect
+            int stringX = (int)(Math.random() * gameWidth);
+            int stringY = (int)(Math.random() * 300);
+            
+            g2d.setColor(new Color(255, 255, 255, 150));
+            g2d.setStroke(new BasicStroke(1));
+            
+            // Draw cosmic string
+            for (int i = 0; i < 20; i++) {
+                int segmentLength = 15 + (int)(Math.random() * 10);
+                int endX = stringX + (int)(Math.cos(time * 0.001 + i) * segmentLength * 3);
+                int endY = stringY + (int)(Math.sin(time * 0.001 + i) * segmentLength * 2);
+                g2d.drawLine(stringX, stringY, endX, endY);
+                stringX = endX;
+                stringY = endY;
+            }
+        }
+        
+        // Enhanced star density for extreme heights
+        Random extremeRandom = new Random(time);
+        int starCount = Math.min(300, 150 + towerHeight / 50); // More stars as tower gets higher
+        
+        for (int i = 0; i < starCount; i++) {
+            int starX = extremeRandom.nextInt(gameWidth);
+            int starY = extremeRandom.nextInt(600);
+            
+            // Twinkling effect
+            float twinkle = (float)(Math.sin(time * 0.01 + i * 0.3) * 0.5 + 0.5);
+            int alpha = (int)(200 * twinkle);
+            
+            // Different star colors
+            Color starColor;
+            int colorType = i % 4;
+            switch (colorType) {
+                case 0: starColor = new Color(255, 255, 255, alpha); break; // White
+                case 1: starColor = new Color(255, 200, 200, alpha); break; // Red
+                case 2: starColor = new Color(200, 200, 255, alpha); break; // Blue
+                default: starColor = new Color(255, 255, 200, alpha); break; // Yellow
+            }
+            
+            g2d.setColor(starColor);
+            int size = extremeRandom.nextInt(2) + 1;
+            g2d.fillOval(starX, starY, size, size);
+        }
+        
+        // Add distant galaxies for very high towers
+        if (towerHeight >= 2000) {
+            int galaxyCount = Math.min(10, towerHeight / 1000);
+            for (int i = 0; i < galaxyCount; i++) {
+                int galaxyX = 100 + i * 150;
+                int galaxyY = 50 + i * 30;
+                
+                // Spiral galaxy effect
+                g2d.setColor(new Color(150, 100, 200, 100));
+                for (int arm = 0; arm < 2; arm++) {
+                    for (int point = 0; point < 15; point++) {
+                        double angle = time * 0.00005 + arm * Math.PI + point * 0.4;
+                        double radius = point * 3;
+                        
+                        int x = (int)(galaxyX + Math.cos(angle) * radius);
+                        int y = (int)(galaxyY + Math.sin(angle) * radius);
+                        
+                        g2d.fillOval(x, y, 2, 2);
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * CRITICAL METHOD: Renders extended sky that NEVER shows black background
+     * This method ensures proper background rendering for ALL tower heights
+     */
+    private void renderExtendedSky(Graphics2D g2d, float timeOfDay, double cameraY, int towerHeight) {
+        Color skyTop, skyMiddle, skyBottom;
+        
+        // Define colors based on tower height and time of day
+        if (towerHeight >= 50) {
+            // Space altitudes - deep space colors
+            skyTop = new Color(0, 0, 20);
+            skyMiddle = new Color(20, 20, 60);
+            skyBottom = new Color(30, 30, 80);
+        } else if (towerHeight >= 30) {
+            // High altitude - atmospheric colors
+            skyTop = new Color(25, 25, 112);
+            skyMiddle = new Color(70, 130, 180);
+            skyBottom = new Color(135, 206, 235);
+        } else if (towerHeight >= 15) {
+            // Mid altitude - bright sky colors
+            if (timeOfDay < 0.2) {
+                // Dawn
+                skyTop = new Color(135, 206, 250);
+                skyMiddle = new Color(255, 218, 185);
+                skyBottom = new Color(255, 228, 196);
+            } else if (timeOfDay < 0.4) {
+                // Day
+                skyTop = new Color(135, 206, 235);
+                skyMiddle = new Color(176, 224, 230);
+                skyBottom = new Color(220, 245, 255);
+            } else if (timeOfDay < 0.6) {
+                // Sunset
+                skyTop = new Color(255, 94, 77);
+                skyMiddle = new Color(255, 154, 0);
+                skyBottom = new Color(255, 218, 185);
+            } else {
+                // Night
+                skyTop = new Color(25, 25, 112);
+                skyMiddle = new Color(72, 61, 139);
+                skyBottom = new Color(100, 100, 150);
+            }
+        } else {
+            // Ground level - normal sky
+            if (timeOfDay < 0.3) {
+                skyTop = new Color(135, 206, 250);
+                skyMiddle = new Color(176, 224, 230);
+                skyBottom = new Color(255, 218, 185);
+            } else if (timeOfDay < 0.7) {
+                skyTop = new Color(135, 206, 235);
+                skyMiddle = new Color(176, 224, 230);
+                skyBottom = new Color(220, 245, 255);
+            } else {
+                skyTop = new Color(25, 25, 112);
+                skyMiddle = new Color(72, 61, 139);
+                skyBottom = new Color(100, 100, 150);
+            }
+        }
+        
+        // CRITICAL: Calculate extended height to cover all possible camera positions
+        int extendedHeight = Math.max(gameHeight * 3, gameHeight + (int)Math.abs(cameraY) + 1000);
+        
+        // Triple gradient for smoother transitions
+        java.awt.GradientPaint topGradient = new java.awt.GradientPaint(
+            0, 0, skyTop, 
+            0, extendedHeight / 3, skyMiddle);
+        g2d.setPaint(topGradient);
+        g2d.fillRect(0, 0, gameWidth, extendedHeight / 3);
+        
+        java.awt.GradientPaint bottomGradient = new java.awt.GradientPaint(
+            0, extendedHeight / 3, skyMiddle,
+            0, extendedHeight, skyBottom);
+        g2d.setPaint(bottomGradient);
+        g2d.fillRect(0, extendedHeight / 3, gameWidth, extendedHeight);
+        
+        // Add atmospheric effects based on height
+        if (towerHeight >= 15) {
+            // Add thin clouds for mid-altitude
+            g2d.setColor(new Color(255, 255, 255, 60));
+            long time = System.currentTimeMillis();
+            for (int i = 0; i < 12; i++) {
+                float cloudX = (float)((time * 0.02 + i * 80) % (gameWidth + 100)) - 50;
+                float cloudY = (float)(150 + i * 35 + Math.sin(time * 0.001 + i) * 25);
+                int size = 60 + (i % 3) * 20;
+                g2d.fillOval((int)cloudX, (int)cloudY, size, size / 2);
+            }
+        }
+        
+        if (towerHeight >= 25) {
+            // Add stars for space altitudes
+            g2d.setColor(Color.WHITE);
+            Random starRandom = new Random(54321);
+            for (int i = 0; i < 60; i++) {
+                int starX = starRandom.nextInt(gameWidth);
+                int starY = starRandom.nextInt(extendedHeight / 2);
+                float twinkle = (float)(Math.sin(System.currentTimeMillis() * 0.01 + i) * 0.5 + 0.5);
+                g2d.setColor(new Color(255, 255, 255, (int)(200 * twinkle)));
+                g2d.fillOval(starX, starY, 2, 2);
+            }
+        }
+        
+        // Debug info removed for clean gameplay experience
     }
 }

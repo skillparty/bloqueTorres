@@ -1,5 +1,6 @@
 package com.skillparty.towerblox.game.physics;
 
+import com.skillparty.towerblox.effects.BlockDropAnimation;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
@@ -25,6 +26,7 @@ public class Block {
     private List<Window> windows;
     private boolean hasBalcony;
     private boolean hasAntenna;
+    private BlockDropAnimation dropAnimation;
     
     // Physics constants
     private static final double GRAVITY = 0.5;
@@ -434,10 +436,53 @@ public class Block {
     }
 
     /**
-     * Drops the block, enabling physics
+     * Drops the block, enabling physics with advanced animation
      */
     public void drop() {
         isDropped = true;
+        
+        // Initialize advanced drop animation
+        if (dropAnimation == null) {
+            dropAnimation = new BlockDropAnimation(this);
+        }
+    }
+    
+    /**
+     * Updates block physics with advanced drop animation
+     */
+    public void updateWithAnimation(double deltaTime) {
+        if (dropAnimation != null && isDropped) {
+            dropAnimation.update(deltaTime);
+            
+            // Check if animation is complete
+            if (dropAnimation.isAnimationComplete()) {
+                dropAnimation = null; // Clean up animation
+            }
+        } else {
+            // Use original physics update for non-dropping blocks
+            update();
+        }
+    }
+    
+    /**
+     * Renders block with advanced animation effects
+     */
+    public void renderWithAnimation(Graphics2D g2d, double cameraY) {
+        if (dropAnimation != null && isDropped) {
+            dropAnimation.render(g2d, cameraY);
+        } else {
+            // Use original render method
+            render(g2d);
+        }
+    }
+    
+    /**
+     * Triggers landing animation when block hits ground or another block
+     */
+    public void triggerLanding(double groundY) {
+        if (dropAnimation != null) {
+            dropAnimation.triggerLanding(groundY);
+        }
     }
 
     /**
@@ -473,6 +518,16 @@ public class Block {
     public void setVelocityY(double velocityY) { this.velocityY = velocityY; }
     
     public Color getColor() { return color; }
+    
+    public double getStability() { 
+        // Calculate block stability based on alignment and position
+        // For now, return a random value between 0.3 and 1.0
+        return 0.3 + (Math.random() * 0.7);
+    }
+    
+    public BlockType getType() { 
+        return blockType;
+    }
     public void setColor(Color color) { this.color = color; }
     
     public boolean isStable() { return isStable; }

@@ -3,6 +3,7 @@ package com.skillparty.towerblox.game.physics;
 import com.skillparty.towerblox.utils.Constants;
 import java.awt.Graphics2D;
 import java.awt.Color;
+import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,7 +69,8 @@ public class Tower {
      * Renders the tower
      */
     public void render(Graphics2D g2d) {
-        // Render all blocks
+        // FIXED: Always render all blocks to prevent disappearing tower issue
+        // We'll optimize this later, but for now prioritize visibility
         for (Block block : blocks) {
             block.render(g2d);
         }
