@@ -185,7 +185,7 @@ public class BlockSystem {
                 double velocity = physicsBody != null ? physicsBody.vy : 0;
                 stretchAmount = 1.0 + Math.min(0.3, Math.abs(velocity) / 1000);
                 squashAmount = 1.0 / stretchAmount;
-                wobbleAmount = Math.sin(animationTime * 10) * 0.02;
+                wobbleAmount = Math.sin(animationTime * 12) * 0.01; // Subtle falling wobble
                 break;
                 
             case LANDING:
@@ -203,8 +203,9 @@ public class BlockSystem {
                 
             case WOBBLING:
                 // Wobble after landing
-                double wobbleProgress = Math.min(1.0, animationTime / 0.5);
-                wobbleAmount = Math.sin(animationTime * 15) * 0.05 * (1.0 - wobbleProgress);
+                double wobbleProgress = Math.min(1.0, animationTime / 0.6);
+                double wobbleFreq = PhysicsTuning.WOBBLE_FREQUENCY * 2 * Math.PI;
+                wobbleAmount = Math.sin(animationTime * wobbleFreq) * PhysicsTuning.WOBBLE_AMPLITUDE * (1.0 - wobbleProgress);
                 squashAmount = 1.0 + wobbleAmount * 0.5;
                 stretchAmount = 1.0 - wobbleAmount * 0.5;
                 
@@ -216,8 +217,9 @@ public class BlockSystem {
                 
             case SETTLING:
                 // Settle to rest
-                squashAmount = squashAmount * 0.95 + 1.0 * 0.05;
-                stretchAmount = stretchAmount * 0.95 + 1.0 * 0.05;
+                double decay = PhysicsTuning.WOBBLE_DECAY;
+                squashAmount = squashAmount * decay + 1.0 * (1.0 - decay);
+                stretchAmount = stretchAmount * decay + 1.0 * (1.0 - decay);
                 wobbleAmount *= 0.9;
                 shakeAmount *= 0.9;
                 

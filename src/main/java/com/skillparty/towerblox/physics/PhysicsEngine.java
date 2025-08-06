@@ -14,11 +14,11 @@ import java.util.List;
 public class PhysicsEngine {
     
     // Physics constants (tuned for Tower Bloxx feel)
-    private static final double GRAVITY = 980.0; // pixels/s² (realistic gravity)
-    private static final double AIR_RESISTANCE = 0.02; // coefficient
-    private static final double TERMINAL_VELOCITY = 850.0; // pixels/s
-    private static final double BOUNCE_DAMPING = 0.4; // energy loss on bounce
-    private static final double FRICTION = 0.15; // horizontal friction
+    private static final double GRAVITY = PhysicsTuning.GRAVITY;
+    private static final double AIR_RESISTANCE = PhysicsTuning.AIR_RESISTANCE;
+    private static final double TERMINAL_VELOCITY = PhysicsTuning.TERMINAL_VELOCITY;
+    private static final double BOUNCE_DAMPING = PhysicsTuning.BOUNCE_DAMPING;
+    private static final double FRICTION = PhysicsTuning.HORIZONTAL_FRICTION;
     
     // Collision detection
     private static final double COLLISION_THRESHOLD = 0.5; // pixels

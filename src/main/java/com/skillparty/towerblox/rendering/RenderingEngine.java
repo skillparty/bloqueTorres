@@ -2,10 +2,10 @@ package com.skillparty.towerblox.rendering;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Comparator;
+import com.skillparty.towerblox.physics.PhysicsTuning;
 
 /**
  * Scalable rendering engine supporting unlimited tower height
@@ -22,7 +22,7 @@ public class RenderingEngine {
     
     // Camera system
     private Camera camera;
-    private static final double CAMERA_SMOOTH_FACTOR = 0.15;
+    private static final double CAMERA_SMOOTH_FACTOR = PhysicsTuning.CAMERA_FOLLOW_SPEED;
     
     // Render layers
     private List<RenderLayer> layers;

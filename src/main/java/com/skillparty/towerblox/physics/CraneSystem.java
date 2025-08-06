@@ -23,8 +23,8 @@ public class CraneSystem {
     private double angularVelocity;   // Angular speed
     private double angularAcceleration;
     private static final double GRAVITY = 9.8;
-    private static final double DAMPING = 0.995; // Air resistance
-    private static final double MAX_ANGLE = Math.PI / 4; // 45 degrees max swing
+    private static final double DAMPING = 0.98; // Air resistance - more realistic swing
+    private static final double MAX_ANGLE = PhysicsTuning.CRANE_SWING_AMPLITUDE;
     
     // Movement parameters
     private double baseSpeed;
@@ -37,7 +37,7 @@ public class CraneSystem {
     private PhysicsEngine.PhysicsBody attachedBlock;
     private boolean hasBlock;
     private double clawOpenAmount; // 0 = closed, 1 = fully open
-    private double clawAnimationSpeed = 4.0;
+    private double clawAnimationSpeed = 5.0; // Faster claw animation
     
     // Visual properties
     private static final Color CABLE_COLOR = new Color(80, 80, 80);
@@ -71,7 +71,7 @@ public class CraneSystem {
         this.x = pivotX;
         this.y = pivotY + cableLength;
         
-        this.baseSpeed = 1.5;
+        this.baseSpeed = PhysicsTuning.CRANE_SWING_SPEED;
         this.currentSpeed = baseSpeed;
         this.pattern = MovementPattern.PENDULUM;
         this.patternTime = 0;

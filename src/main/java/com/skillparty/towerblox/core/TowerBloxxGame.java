@@ -1,6 +1,8 @@
 package com.skillparty.towerblox.core;
 
-import com.skillparty.towerblox.physics.*;
+import com.skillparty.towerblox.physics.PhysicsEngine;
+import com.skillparty.towerblox.physics.CraneSystem;
+import com.skillparty.towerblox.physics.BlockSystem;
 import com.skillparty.towerblox.rendering.RenderingEngine;
 import com.skillparty.towerblox.ui.components.CityBackground;
 import com.skillparty.towerblox.game.DifficultyLevel;

@@ -23,6 +23,7 @@ javac -d build -cp build src/main/java/com/skillparty/towerblox/ui/components/Ci
 # Compile core systems
 echo "📦 Compiling Core Systems..."
 javac -d build -cp build src/main/java/com/skillparty/towerblox/core/GameLoop.java
+javac -d build -cp build src/main/java/com/skillparty/towerblox/physics/PhysicsTuning.java
 javac -d build -cp build src/main/java/com/skillparty/towerblox/physics/PhysicsEngine.java
 javac -d build -cp build src/main/java/com/skillparty/towerblox/physics/CraneSystem.java
 javac -d build -cp build src/main/java/com/skillparty/towerblox/physics/BlockSystem.java
