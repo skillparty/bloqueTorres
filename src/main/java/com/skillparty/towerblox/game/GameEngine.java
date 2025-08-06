@@ -6,7 +6,7 @@ import com.skillparty.towerblox.game.physics.Tower;
 import com.skillparty.towerblox.score.ScoreManager;
 import com.skillparty.towerblox.score.ScoreStorage;
 import com.skillparty.towerblox.score.HighScore;
-// import com.skillparty.towerblox.ui.components.CityBackground;
+import com.skillparty.towerblox.ui.components.CityBackground;
 import com.skillparty.towerblox.effects.AdvancedFeaturesManager;
 import com.skillparty.towerblox.audio.SoundManager;
 
@@ -42,7 +42,7 @@ public class GameEngine implements KeyListener {
     private ScoreManager scoreManager;
     private ScoreStorage scoreStorage;
     private Random random;
-    // private CityBackground cityBackground;
+    private CityBackground cityBackground;
     private AdvancedFeaturesManager advancedFeatures;
     private SoundManager soundManager;
     private MovementRecorder movementRecorder;
@@ -104,7 +104,7 @@ public class GameEngine implements KeyListener {
         this.crane = new Crane(GAME_WIDTH / 2, 50, GAME_WIDTH);
         this.currentDifficulty = DifficultyLevel.NORMAL;
         this.scoreManager = new ScoreManager(currentDifficulty);
-        // this.cityBackground = new CityBackground(GAME_WIDTH, GAME_HEIGHT, GROUND_LEVEL);
+        this.cityBackground = new CityBackground();
         this.advancedFeatures = new AdvancedFeaturesManager();
         this.soundManager = new SoundManager();
         this.movementRecorder = new MovementRecorder();
@@ -240,10 +240,10 @@ public class GameEngine implements KeyListener {
             }
         }
         
-        // Update city background
-        // if (cityBackground != null) {
-        //     cityBackground.update();
-        // }
+        // Update professional city background
+        if (cityBackground != null) {
+            cityBackground.update(deltaTime);
+        }
         
         // Update advanced features (particle effects, etc.)
         if (advancedFeatures != null) {
@@ -286,14 +286,15 @@ public class GameEngine implements KeyListener {
         // Apply camera transformation
         g2d.translate(0, cameraY);
         
-        // Render dynamic city background
-        // if (cityBackground != null) {
-        //     int towerHeight = tower != null ? tower.getHeight() : 0;
-        //     cityBackground.render(g2d, towerHeight, cameraY);
-        // } else {
-        // Fallback background
-        g2d.setColor(new Color(135, 206, 235)); // Sky blue
-        g2d.fillRect(0, (int)-cameraY, GAME_WIDTH, GAME_HEIGHT);
+        // Render professional dynamic city background
+        if (cityBackground != null) {
+            int towerHeight = tower != null ? tower.getHeight() : 0;
+            cityBackground.render(g2d, towerHeight, cameraY);
+        } else {
+            // Fallback background
+            g2d.setColor(new Color(135, 206, 235)); // Sky blue
+            g2d.fillRect(0, (int)-cameraY, GAME_WIDTH, GAME_HEIGHT);
+        }
         
         // Draw ground
         g2d.setColor(new Color(34, 139, 34)); // Forest green

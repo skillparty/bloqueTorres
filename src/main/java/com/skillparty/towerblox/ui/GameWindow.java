@@ -191,6 +191,15 @@ public class GameWindow extends JFrame implements GameEngine.GameStateListener {
     }
     
     /**
+     * Starts the game directly with default difficulty (bypasses menu)
+     */
+    public void startGameDirectly() {
+        // Start with NORMAL difficulty by default
+        startNewGame(DifficultyLevel.NORMAL);
+        System.out.println("Game started directly with NORMAL difficulty");
+    }
+    
+    /**
      * Shows the high scores
      */
     public void showHighScores() {

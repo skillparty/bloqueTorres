@@ -38,7 +38,11 @@ public class Crane {
     private double minY, maxY;
     private boolean manualControl = false; // Para controles manuales
     
-
+    // Professional standard movement system
+    private StandardCraneMovement standardMovement;
+    private boolean useStandardMovement = true;
+    
+    // Movement recorder for custom patterns (removing duplicate)
     
     public Crane(double startX, double startY, int gameWidth) {
         this.gameWidth = gameWidth;
@@ -65,6 +69,11 @@ public class Crane {
         this.hookLength = Constants.CRANE_HOOK_LENGTH;
         
         this.craneAnimation = new CraneAnimation();
+        
+        // Initialize professional standard movement system
+        this.standardMovement = StandardCraneMovement.createClassicPattern(
+            centerX, startY, gameWidth
+        );
     }
     
     /**
@@ -81,8 +90,13 @@ public class Crane {
             return; // Don't move while animating
         }
         
-        // Torre Bloxx 2005 style smooth pendulum movement with acceleration/deceleration
-        updatePendulumMovement(dt);
+        // Use professional standard movement or fallback to pendulum
+        if (useStandardMovement && standardMovement != null) {
+            updateStandardMovement(deltaTime);
+        } else {
+            // Torre Bloxx 2005 style smooth pendulum movement with acceleration/deceleration
+            updatePendulumMovement(dt);
+        }
         
         // Update current block position if carrying one
         if (currentBlock != null && !currentBlock.isDropped()) {
@@ -258,11 +272,103 @@ public class Crane {
     }
     
     /**
+     * Professional standard movement using the StandardCraneMovement system
+     */
+    private void updateStandardMovement(long deltaTime) {
+        // Check if movement recorder is replaying
+        if (movementRecorder != null && movementRecorder.isReplaying()) {
+            MovementRecorder.Position replayPosition = movementRecorder.getReplayPosition(minX, maxX, minY, maxY);
+            if (replayPosition != null) {
+                x = replayPosition.x;
+                y = replayPosition.y;
+                
+                if (movementRecorder.shouldDropInReplay() && currentBlock != null && !currentBlock.isDropped()) {
+                    dropBlock();
+                }
+                return;
+            }
+        }
+        
+        // Use standard movement pattern
+        double[] newPosition = standardMovement.updatePosition(deltaTime);
+        x = newPosition[0];
+        
+        // Keep Y position stable unless manual control is enabled
+        if (manualControl) {
+            y = newPosition[1];
+        }
+        
+        // Ensure position stays within bounds
+        if (x < minX) x = minX;
+        if (x > maxX) x = maxX;
+        if (y < minY) y = minY;
+        if (y > maxY) y = maxY;
+    }
+    
+    /**
      * Obtiene la altura actual de la torre (necesario para los cálculos)
      */
     private int getCurrentTowerHeight() {
         // Este método será llamado desde GameEngine para proporcionar la altura actual
         return currentTowerHeight;
+    }
+    
+    // ===== PUBLIC METHODS FOR CONTROLLING CRANE MOVEMENT =====
+    
+    /**
+     * Switches to professional standard movement (Tower Bloxx 2005 style)
+     */
+    public void enableStandardMovement() {
+        this.useStandardMovement = true;
+        if (standardMovement != null) {
+            standardMovement.reset();
+        }
+        System.out.println("🏗️ Switched to Standard Movement (Tower Bloxx 2005 style)");
+    }
+    
+    /**
+     * Switches to custom pendulum movement
+     */
+    public void enableCustomMovement() {
+        this.useStandardMovement = false;
+        System.out.println("🏗️ Switched to Custom Pendulum Movement");
+    }
+    
+    /**
+     * Changes the standard movement pattern
+     */
+    public void setMovementPattern(StandardCraneMovement.MovementPattern pattern) {
+        if (standardMovement != null) {
+            standardMovement.setPattern(pattern);
+            System.out.println("🏗️ Movement pattern changed to: " + pattern.name());
+        }
+    }
+    
+    /**
+     * Adjusts the movement speed (1.0 = normal, 2.0 = double speed, etc.)
+     */
+    public void setMovementSpeed(double speedMultiplier) {
+        if (standardMovement != null) {
+            standardMovement.setAngularSpeed(standardMovement.getAngularSpeed() * speedMultiplier);
+            System.out.println("🏗️ Movement speed adjusted to: " + speedMultiplier + "x");
+        }
+    }
+    
+    /**
+     * Gets the current movement progress (0.0 to 1.0)
+     */
+    public double getMovementProgress() {
+        if (useStandardMovement && standardMovement != null) {
+            return standardMovement.getMovementProgress();
+        }
+        return (x - minX) / (maxX - minX);
+    }
+    
+    /**
+     * Checks if using standard movement
+     */
+    public boolean isUsingStandardMovement() {
+        return useStandardMovement;
     }
     
     // Variable para almacenar la altura actual de la torre

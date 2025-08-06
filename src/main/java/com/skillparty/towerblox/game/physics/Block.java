@@ -275,33 +275,9 @@ public class Block {
     }
     
     private void renderFoundation(Graphics2D g2d, int x, int y, int width, int height) {
-        // Foundation: solid, concrete-like base
-        Color foundationColor = new Color(120, 120, 120);
-        
-        // Main foundation body
-        GradientPaint gradient = new GradientPaint(
-            x, y, foundationColor.brighter(),
-            x + width, y + height, foundationColor.darker()
-        );
-        g2d.setPaint(gradient);
-        g2d.fillRect(x, y, width, height);
-        
-        // Foundation details
-        g2d.setColor(foundationColor.darker());
-        g2d.setStroke(new BasicStroke(3));
-        g2d.drawRect(x, y, width, height);
-        
-        // Concrete texture
-        g2d.setColor(new Color(100, 100, 100, 100));
-        for (int i = x + 5; i < x + width - 5; i += 10) {
-            for (int j = y + 5; j < y + height - 5; j += 10) {
-                g2d.fillRect(i, j, 3, 3);
-            }
-        }
-        
-        // Foundation label
-        g2d.setColor(Color.WHITE);
-        g2d.drawString("BASE", x + width/2 - 15, y + height/2 + 3);
+        // Use professional base design system
+        ProfessionalBaseDesign.BaseType baseType = ProfessionalBaseDesign.getBaseTypeForTower(0, "Normal");
+        ProfessionalBaseDesign.renderProfessionalBase(g2d, x, y, width, height, baseType);
     }
     
     private void renderResidentialFloor(Graphics2D g2d, int x, int y, int width, int height) {

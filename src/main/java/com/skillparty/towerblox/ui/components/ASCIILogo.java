@@ -7,35 +7,42 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 
 /**
- * ASCII art logo component for Tower Bloxx in Linux terminal style
+ * Professional ASCII logo for Tower Bloxx with developer credit
  */
 public class ASCIILogo {
     private static final String[] LOGO_LINES = {
-        "     ██╗ █████╗ ██╗   ██╗ █████╗ ",
-        "     ██║██╔══██╗██║   ██║██╔══██╗",
-        "     ██║███████║██║   ██║███████║",
-        "██   ██║██╔══██║╚██╗ ██╔╝██╔══██║",
-        "╚█████╔╝██║  ██║ ╚████╔╝ ██║  ██║",
-        " ╚════╝ ╚═╝  ╚═╝  ╚═══╝  ╚═╝  ╚═╝",
+        "     ██╗ █████╗ ██╗   ██╗ █████╗ ██████╗ ██╗      ██████╗ ██╗  ██╗██╗  ██╗",
+        "     ██║██╔══██╗██║   ██║██╔══██╗██╔══██╗██║     ██╔═══██╗╚██╗██╔╝╚██╗██╔╝",
+        "     ██║███████║██║   ██║███████║██████╔╝██║     ██║   ██║ ╚███╔╝  ╚███╔╝ ",
+        "██   ██║██╔══██║╚██╗ ██╔╝██╔══██║██╔══██╗██║     ██║   ██║ ██╔██╗  ██╔██╗ ",
+        "╚█████╔╝██║  ██║ ╚████╔╝ ██║  ██║██████╔╝███████╗╚██████╔╝██╔╝ ██╗██╔╝ ██╗",
+        " ╚════╝ ╚═╝  ╚═╝  ╚═══╝  ╚═╝  ╚═╝╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝",
         "",
-        "████████╗ ██████╗ ██╗    ██╗███████╗██████╗ ",
-        "╚══██╔══╝██╔═══██╗██║    ██║██╔════╝██╔══██╗",
-        "   ██║   ██║   ██║██║ █╗ ██║█████╗  ██████╔╝",
-        "   ██║   ██║   ██║██║███╗██║██╔══╝  ██╔══██╗",
-        "   ██║   ╚██████╔╝╚███╔███╔╝███████╗██║  ██║",
-        "   ╚═╝    ╚═════╝  ╚══╝╚══╝ ╚══════╝╚═╝  ╚═╝"
+        "                    ██████╗ ██╗   ██╗    ",
+        "                    ██╔══██╗╚██╗ ██╔╝    ",
+        "                    ██████╔╝ ╚████╔╝     ",
+        "                    ██╔══██╗  ╚██╔╝      ",
+        "                    ██████╔╝   ██║       ",
+        "                    ╚═════╝    ╚═╝       ",
+        "",
+        "     ██╗ ██████╗ ███████╗███████╗ █████╗ ██╗     ███████╗     ██╗ █████╗ ███╗   ██╗██████╗ ██████╗  ██████╗ ",
+        "     ██║██╔═══██╗██╔════╝██╔════╝██╔══██╗██║     ██╔════╝     ██║██╔══██╗████╗  ██║██╔══██╗██╔══██╗██╔═══██╗",
+        "     ██║██║   ██║███████╗█████╗  ███████║██║     █████╗       ██║███████║██╔██╗ ██║██║  ██║██████╔╝██║   ██║",
+        "██   ██║██║   ██║╚════██║██╔══╝  ██╔══██║██║     ██╔══╝  ██   ██║██╔══██║██║╚██╗██║██║  ██║██╔══██╗██║   ██║",
+        "╚█████╔╝╚██████╔╝███████║███████╗██║  ██║███████╗███████╗╚█████╔╝██║  ██║██║ ╚████║██████╔╝██║  ██║╚██████╔╝",
+        " ╚════╝  ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝ ╚════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ╚═╝  ╚═╝ ╚═════╝ "
     };
 
-    private static final String VERSION_TEXT = "by joseAlejandro";
-    private static final String SUBTITLE = "Build the highest tower!";
+    private static final String DEV_TEXT = "by joseAlejandro";
+    private static final String SUBTITLE = "Professional Tower Building Experience";
 
-    // Professional corporate colors matching the menu
+    // Professional colors
     private static final Color BACKGROUND_COLOR = new Color(15, 23, 42);     // Dark Slate
     private static final Color PRIMARY_COLOR = new Color(59, 130, 246);      // Professional Blue
     private static final Color SECONDARY_COLOR = new Color(16, 185, 129);    // Success Green
     private static final Color ACCENT_COLOR = new Color(99, 102, 241);       // Indigo
-    private static final Color VERSION_COLOR = new Color(148, 163, 184);     // Light Gray
-    private static final Color SUBTITLE_COLOR = new Color(245, 158, 11);     // Amber
+    private static final Color DEV_COLOR = new Color(245, 158, 11);          // Amber for developer credit
+    private static final Color SUBTITLE_COLOR = new Color(148, 163, 184);    // Light Gray
 
     private FontManager fontManager;
     private int width;
@@ -128,12 +135,12 @@ public class ASCIILogo {
         g2d.drawString(SUBTITLE, subtitleX, currentY);
         currentY += subtitleMetrics.getHeight() + 5;
 
-        // Render version
+        // Render developer credit
         g2d.setFont(versionFont);
-        g2d.setColor(VERSION_COLOR);
-        int versionWidth = versionMetrics.stringWidth(VERSION_TEXT);
-        int versionX = x + (width - versionWidth) / 2;
-        g2d.drawString(VERSION_TEXT, versionX, currentY);
+        g2d.setColor(DEV_COLOR);
+        int devWidth = versionMetrics.stringWidth(DEV_TEXT);
+        int devX = x + (width - devWidth) / 2;
+        g2d.drawString(DEV_TEXT, devX, currentY);
     }
 
     /**
@@ -220,7 +227,7 @@ public class ASCIILogo {
         }
         System.out.println();
         System.out.println("    " + SUBTITLE);
-        System.out.println("    " + VERSION_TEXT);
+        System.out.println("    " + DEV_TEXT);
         System.out.println();
     }
 }
