@@ -7,6 +7,8 @@ import java.awt.Rectangle;
 import java.awt.BasicStroke;
 import java.awt.GradientPaint;
 import java.awt.RenderingHints;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -275,9 +277,64 @@ public class Block {
     }
     
     private void renderFoundation(Graphics2D g2d, int x, int y, int width, int height) {
-        // Use professional base design system
-        ProfessionalBaseDesign.BaseType baseType = ProfessionalBaseDesign.getBaseTypeForTower(0, "Normal");
-        ProfessionalBaseDesign.renderProfessionalBase(g2d, x, y, width, height, baseType);
+        // PROFESSIONAL FOUNDATION DESIGN - HIGHLY VISIBLE BASE
+        
+        // Foundation shadow for depth
+        g2d.setColor(new Color(0, 0, 0, 80));
+        g2d.fillRect(x + 3, y + 3, width, height);
+        
+        // Main foundation with stone-like gradient
+        GradientPaint foundationGradient = new GradientPaint(
+            x, y, new Color(139, 137, 137),      // Dark gray
+            x + width, y + height, new Color(105, 105, 105)  // Dim gray
+        );
+        g2d.setPaint(foundationGradient);
+        g2d.fillRect(x, y, width, height);
+        
+        // Foundation border - thick and prominent
+        g2d.setColor(new Color(64, 64, 64)); // Very dark gray
+        g2d.setStroke(new BasicStroke(4));
+        g2d.drawRect(x, y, width, height);
+        
+        // Stone block pattern for realism
+        g2d.setColor(new Color(85, 85, 85)); // Darker gray for lines
+        g2d.setStroke(new BasicStroke(2));
+        
+        // Horizontal stone lines
+        int stoneHeight = height / 3;
+        for (int i = 1; i < 3; i++) {
+            int lineY = y + (i * stoneHeight);
+            g2d.drawLine(x, lineY, x + width, lineY);
+        }
+        
+        // Vertical stone lines (offset pattern)
+        int stoneWidth = width / 4;
+        for (int row = 0; row < 3; row++) {
+            int lineY = y + (row * stoneHeight);
+            int offset = (row % 2) * (stoneWidth / 2); // Offset every other row
+            
+            for (int col = 1; col < 4; col++) {
+                int lineX = x + offset + (col * stoneWidth);
+                if (lineX < x + width) {
+                    g2d.drawLine(lineX, lineY, lineX, lineY + stoneHeight);
+                }
+            }
+        }
+        
+        // Foundation highlight for 3D effect
+        g2d.setColor(new Color(192, 192, 192, 150)); // Light gray highlight
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawLine(x + 2, y + 2, x + width - 2, y + 2); // Top highlight
+        g2d.drawLine(x + 2, y + 2, x + 2, y + height - 2); // Left highlight
+        
+        // Foundation label for clarity
+        g2d.setColor(new Color(255, 255, 255, 200)); // Semi-transparent white
+        g2d.setFont(new Font("Arial", Font.BOLD, 10));
+        String foundationText = "BASE";
+        FontMetrics fm = g2d.getFontMetrics();
+        int textX = x + (width - fm.stringWidth(foundationText)) / 2;
+        int textY = y + (height + fm.getAscent()) / 2;
+        g2d.drawString(foundationText, textX, textY);
     }
     
     private void renderResidentialFloor(Graphics2D g2d, int x, int y, int width, int height) {

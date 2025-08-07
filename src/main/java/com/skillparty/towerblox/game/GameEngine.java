@@ -47,6 +47,10 @@ public class GameEngine implements KeyListener {
     private SoundManager soundManager;
     private MovementRecorder movementRecorder;
     
+    // Professional gameplay enhancement systems
+    private GameplayEnhancer gameplayEnhancer;
+    private GameFeedbackSystem feedbackSystem;
+    
     // Camera system for following the tower
     private double cameraY = 0; // Camera offset (negative values move view up)
     private double targetCameraY = 0; // Target camera position for smooth movement
@@ -108,7 +112,13 @@ public class GameEngine implements KeyListener {
         this.advancedFeatures = new AdvancedFeaturesManager();
         this.soundManager = new SoundManager();
         this.movementRecorder = new MovementRecorder();
+        
+        // Initialize professional gameplay systems
+        this.gameplayEnhancer = new GameplayEnhancer();
+        this.feedbackSystem = new GameFeedbackSystem();
+        
         System.out.println("🎮 MovementRecorder creado en GameEngine");
+        System.out.println("🎯 Professional gameplay systems initialized");
         
         // Conectar el MovementRecorder con la grúa
         if (crane != null) {
@@ -139,6 +149,10 @@ public class GameEngine implements KeyListener {
         if (tower != null) tower.reset();
         if (crane != null) crane.reset();
         if (scoreManager != null) scoreManager.reset();
+        
+        // Reset professional gameplay systems
+        if (gameplayEnhancer != null) gameplayEnhancer.reset();
+        if (feedbackSystem != null) feedbackSystem.reset();
         
         // The first block will be created automatically in the update loop
     }
@@ -250,6 +264,11 @@ public class GameEngine implements KeyListener {
             advancedFeatures.update(deltaTime / 1000.0); // Convert to seconds
         }
         
+        // Update professional feedback system
+        if (feedbackSystem != null) {
+            feedbackSystem.update(deltaTime);
+        }
+        
         // Update camera system
         updateCamera();
         
@@ -323,6 +342,11 @@ public class GameEngine implements KeyListener {
         
         // Restore original transform for UI elements (UI should not move with camera)
         g2d.setTransform(originalTransform);
+        
+        // Render professional feedback system (with screen shake and effects)
+        if (feedbackSystem != null) {
+            feedbackSystem.render(g2d, GAME_WIDTH, GAME_HEIGHT);
+        }
         
         // Render UI elements (fixed position)
         renderGameUI(g2d);
@@ -536,42 +560,81 @@ public class GameEngine implements KeyListener {
             tower.addBlock(currentBlock);
             int newHeight = tower.getHeight();
             
-            // Calculate score
+            // Professional gameplay analysis and feedback
+            GameplayEnhancer.GameplayFeedback feedback = gameplayEnhancer.analyzeBlockPlacement(
+                currentBlock, previousTop, tower, crane, System.currentTimeMillis()
+            );
+            
+            // Calculate enhanced score using existing ScoreManager method
             int points = scoreManager.addBlockScore(currentBlock, previousTop);
             
-            // Trigger visual effects based on placement quality
-            if (advancedFeatures != null) {
-                int blockCenterX = (int)(currentBlock.getX() + currentBlock.getWidth() / 2);
-                int blockTopY = (int)currentBlock.getY();
-                
-                // Determine if it was a perfect placement (high points indicate good alignment)
-                if (points > 1500) { // Perfect placement threshold
-                    advancedFeatures.onPerfectBlockPlacement(blockCenterX, blockTopY, currentBlock);
-                    // Play perfect placement sound
-                    if (soundManager != null) {
+            // Add bonus points based on professional analysis
+            if (feedback.score > points) {
+                scoreManager.addBonusPoints(feedback.score - points);
+            }
+            
+            // Professional visual feedback
+            int blockCenterX = (int)(currentBlock.getX() + currentBlock.getWidth() / 2);
+            int blockTopY = (int)currentBlock.getY();
+            
+            if (feedbackSystem != null) {
+                feedbackSystem.addPlacementFeedback(blockCenterX, blockTopY - 30, feedback);
+            }
+            
+            // Enhanced audio feedback based on quality
+            if (soundManager != null) {
+                switch (feedback.quality) {
+                    case PERFECT:
                         soundManager.playSound(SoundManager.SoundType.PERFECT_PLACEMENT);
-                    }
-                } else if (points > 500) { // Good placement threshold
-                    advancedFeatures.onGoodBlockPlacement(blockCenterX, blockTopY, currentBlock);
+                        break;
+                    case EXCELLENT:
+                    case GOOD:
+                        soundManager.playSound(SoundManager.SoundType.BLOCK_LAND);
+                        break;
+                    default:
+                        // Basic landing sound for lower quality placements
+                        break;
                 }
                 
-                // Check for height transitions (major phase changes)
-                advancedFeatures.onHeightTransition(blockCenterX, blockTopY, newHeight, previousHeight);
-                
-                // Check for milestone achievements
-                if (newHeight % 10 == 0) { // Every 10 blocks
-                    advancedFeatures.onMilestoneReached(blockCenterX, blockTopY - 50, newHeight);
-                    // Play milestone sound
-                    if (soundManager != null) {
-                        soundManager.playSound(SoundManager.SoundType.MILESTONE_REACHED);
-                    }
+                // Special combo sound
+                if (feedback.isCombo && feedback.comboCount >= 5) {
+                    soundManager.playSound(SoundManager.SoundType.MILESTONE_REACHED);
                 }
             }
             
-            // Notify listeners
+            // Legacy effects system (keeping for compatibility)
+            if (advancedFeatures != null) {
+                if (feedback.quality == GameplayEnhancer.PlacementQuality.PERFECT) {
+                    advancedFeatures.onPerfectBlockPlacement(blockCenterX, blockTopY, currentBlock);
+                } else if (feedback.quality == GameplayEnhancer.PlacementQuality.GOOD || 
+                          feedback.quality == GameplayEnhancer.PlacementQuality.EXCELLENT) {
+                    advancedFeatures.onGoodBlockPlacement(blockCenterX, blockTopY, currentBlock);
+                }
+                
+                // Height transitions and milestones
+                advancedFeatures.onHeightTransition(blockCenterX, blockTopY, newHeight, previousHeight);
+                
+                if (newHeight % 10 == 0) {
+                    advancedFeatures.onMilestoneReached(blockCenterX, blockTopY - 50, newHeight);
+                }
+            }
+            
+            // Adaptive difficulty adjustment based on player performance
+            if (gameplayEnhancer != null) {
+                double suggestedSpeedMultiplier = gameplayEnhancer.suggestSpeedMultiplier(
+                    crane.getSpeed(), tower.getHeight()
+                );
+                // Apply gradual speed adjustment for smooth gameplay
+                double currentSpeed = crane.getSpeed();
+                double targetSpeed = crane.getBaseSpeed() * suggestedSpeedMultiplier;
+                double adjustedSpeed = currentSpeed + (targetSpeed - currentSpeed) * 0.1; // 10% adjustment per block
+                crane.setSpeed(adjustedSpeed);
+            }
+            
+            // Notify listeners with enhanced information
             if (stateListener != null) {
                 stateListener.onScoreChanged(scoreManager.getCurrentScore());
-                stateListener.onBlockPlaced(points, scoreManager.getCurrentCombo());
+                stateListener.onBlockPlaced(points, Math.max(feedback.comboCount, scoreManager.getCurrentCombo()));
             }
             
             // Remove the block from crane after it's been added to tower
@@ -624,6 +687,7 @@ public class GameEngine implements KeyListener {
         // Update crane swing range based on tower height (Tower Bloxx 2005 mechanics)
         if (crane != null) {
             crane.updateSwingRange(towerHeight);
+            System.out.println("🎯 Swing range updated for height: " + towerHeight);
         }
         Block.BlockType blockType = determineBlockType(towerHeight);
         Color blockColor = getBlockColorForType(blockType, towerHeight);
@@ -635,24 +699,22 @@ public class GameEngine implements KeyListener {
         Block newBlock = new Block(crane.getX() - width/2, crane.getY() + 60, width, height, blockColor, blockType);
         crane.setCurrentBlock(newBlock);
         
-        // NUEVO: Iniciar reproducción de patrón grabado si hay patrones disponibles
-        if (movementRecorder != null && !movementRecorder.getSavedPatterns().isEmpty() && !movementRecorder.isReplaying()) {
-            movementRecorder.startNextReplay();
-        }
+        // DESHABILITADO: No reproducir patrones automáticamente en el juego principal
+        // Los patrones grabados son solo para el modo de práctica/demostración
     }
     
     /**
      * Adjusts crane speed based on tower height for progressive difficulty
      */
     private void adjustCraneSpeed() {
-        if (tower != null) {
+        if (tower != null && crane != null) {
             int towerHeight = tower.getHeight();
             double baseSpeed = crane.getBaseSpeed();
             double speedMultiplier = 1.0;
             
-            // Progressive speed increase every 10 levels
-            if (towerHeight >= 10) {
-                speedMultiplier += (towerHeight / 10) * 0.3; // +30% speed every 10 levels
+            // Progressive speed increase every 5 levels (más agresivo)
+            if (towerHeight >= 5) {
+                speedMultiplier += (towerHeight / 5) * 0.2; // +20% speed every 5 levels
             }
             
             // Apply difficulty multiplier
@@ -661,7 +723,7 @@ public class GameEngine implements KeyListener {
             double newSpeed = baseSpeed * speedMultiplier;
             crane.setSpeed(newSpeed);
             
-            // Speed increased silently
+            System.out.println("🏗️ Speed adjusted: " + String.format("%.2f", newSpeed) + " (Height: " + towerHeight + ")");
         }
     }
     
@@ -1112,6 +1174,68 @@ public class GameEngine implements KeyListener {
     // Setters
     public void setStateListener(GameStateListener listener) {
         this.stateListener = listener;
+    }
+    
+    /**
+     * SIMPLE RENDER METHOD - ENSURES BASE IS VISIBLE
+     */
+    public void render(Graphics2D g2d) {
+        if (currentState != GameState.PLAYING) {
+            return;
+        }
+        
+        // Calculate camera offset to ensure base is always visible
+        double cameraY = calculateCameraOffset();
+        
+        // Apply camera transformation
+        g2d.translate(0, cameraY);
+        
+        // Render background first
+        if (cityBackground != null && tower != null) {
+            cityBackground.render(g2d, tower.getHeight(), cameraY);
+        }
+        
+        // Render tower (including base)
+        if (tower != null) {
+            tower.render(g2d);
+        }
+        
+        // Render crane
+        if (crane != null) {
+            crane.render(g2d);
+        }
+        
+        // Reset transformation
+        g2d.translate(0, -cameraY);
+    }
+    
+    /**
+     * Calculate camera offset to keep base visible and follow tower growth
+     */
+    private double calculateCameraOffset() {
+        if (tower == null || tower.isEmpty()) {
+            return 0; // No offset needed for empty tower
+        }
+        
+        int towerHeight = tower.getHeight();
+        
+        // CRITICAL: Always ensure base is visible
+        double baseY = GROUND_LEVEL - (towerHeight * 35); // Approximate block height
+        double screenBottom = GAME_HEIGHT - 100; // Leave space for UI
+        
+        // Calculate offset to keep base visible
+        double cameraOffset = 0;
+        if (baseY > screenBottom) {
+            cameraOffset = -(baseY - screenBottom);
+        }
+        
+        // Smooth camera movement for towers > 5 blocks
+        if (towerHeight > 5) {
+            double targetOffset = -(towerHeight - 5) * 25; // Follow tower growth
+            cameraOffset = Math.min(cameraOffset, targetOffset);
+        }
+        
+        return cameraOffset;
     }
 
 }

@@ -77,28 +77,28 @@ public class MenuPanel extends JPanel implements KeyListener {
     private void createButtons() {
         buttonBounds = new Rectangle[6];
         
-        // Difficulty buttons in a row - positioned lower to avoid covering the image title
-        int buttonWidth = 140;
-        int buttonHeight = 55;
+        // Block-style buttons positioned to work with background image
+        int blockWidth = 150;
+        int blockHeight = 55;
         int spacing = 25;
-        int startY = 420; // Moved down to avoid image title
-        int totalWidth = 3 * buttonWidth + 2 * spacing;
+        
+        // First row - Difficulty buttons positioned below ASCII logo
+        int startY = 320; // Positioned below the ASCII logo
+        int totalWidth = 3 * blockWidth + 2 * spacing;
         int startX = (800 - totalWidth) / 2;
         
         for (int i = 0; i < 3; i++) {
-            buttonBounds[i] = new Rectangle(startX + i * (buttonWidth + spacing), startY, buttonWidth, buttonHeight);
+            buttonBounds[i] = new Rectangle(startX + i * (blockWidth + spacing), startY, blockWidth, blockHeight);
         }
         
-        // Special buttons below - now 3 buttons in a row
-        int specialY = startY + buttonHeight + 35;
-        int specialWidth = 150;
-        int specialHeight = 45;
-        int specialTotalWidth = 3 * specialWidth + 2 * spacing;
-        int specialStartX = (800 - specialTotalWidth) / 2;
+        // Second row - Special buttons stacked below
+        int secondRowY = startY + blockHeight + 20;
+        int secondRowWidth = 3 * blockWidth + 2 * spacing;
+        int secondRowX = (800 - secondRowWidth) / 2;
         
-        buttonBounds[3] = new Rectangle(specialStartX, specialY, specialWidth, specialHeight);
-        buttonBounds[4] = new Rectangle(specialStartX + specialWidth + spacing, specialY, specialWidth, specialHeight);
-        buttonBounds[5] = new Rectangle(specialStartX + 2 * (specialWidth + spacing), specialY, specialWidth, specialHeight);
+        buttonBounds[3] = new Rectangle(secondRowX, secondRowY, blockWidth, blockHeight);
+        buttonBounds[4] = new Rectangle(secondRowX + blockWidth + spacing, secondRowY, blockWidth, blockHeight);
+        buttonBounds[5] = new Rectangle(secondRowX + 2 * (blockWidth + spacing), secondRowY, blockWidth, blockHeight);
     }
 
     private void setupEventHandlers() {
@@ -207,182 +207,533 @@ public class MenuPanel extends JPanel implements KeyListener {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         
-        // Draw background image
+        // Draw professional construction site background
+        drawConstructionBackground(g2d);
+        
+        // Draw ASCII logo with terminal effect only
+        drawASCIILogo(g2d);
+        
+        // Draw block-style buttons
+        for (int i = 0; i < buttonBounds.length; i++) {
+            drawBlockButton(g2d, i);
+        }
+        
+        // Draw construction-themed instructions
+        drawInstructions(g2d);
+        
+        g2d.dispose();
+    }
+    
+    /**
+     * Draws background using the PNG image with overlay for block buttons
+     */
+    private void drawConstructionBackground(Graphics2D g2d) {
+        // Draw the PNG background image
         if (backgroundImage != null) {
             g2d.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
         } else {
-            // Fallback gradient background with modern colors
-            GradientPaint gradient = new GradientPaint(0, 0, new Color(44, 62, 80), 0, getHeight(), new Color(52, 73, 94));
-            g2d.setPaint(gradient);
+            // Fallback construction site background if image fails to load
+            GradientPaint skyGradient = new GradientPaint(
+                0, 0, new Color(135, 206, 235), // Sky blue
+                0, getHeight() * 0.6f, new Color(176, 224, 230) // Light blue
+            );
+            g2d.setPaint(skyGradient);
             g2d.fillRect(0, 0, getWidth(), getHeight());
+            
+            // Ground
+            g2d.setColor(new Color(139, 69, 19)); // Saddle brown
+            g2d.fillRect(0, (int)(getHeight() * 0.85), getWidth(), getHeight());
+            
+            // Construction site elements
+            drawConstructionElements(g2d);
         }
         
-        // Draw subtle overlay for better contrast without covering the image completely
-        g2d.setColor(OVERLAY);
+        // Subtle overlay for better contrast with block buttons
+        g2d.setColor(new Color(0, 0, 0, 25));
         g2d.fillRect(0, 0, getWidth(), getHeight());
+    }
+    
+    /**
+     * Draws construction site elements in the background
+     */
+    private void drawConstructionElements(Graphics2D g2d) {
+        // Simple building silhouettes in the background
+        g2d.setColor(new Color(70, 70, 70, 100));
         
-        // Draw ASCII logo positioned above the image title
-        drawASCIILogo(g2d);
+        // Building 1
+        g2d.fillRect(50, (int)(getHeight() * 0.7), 80, (int)(getHeight() * 0.15));
         
-        // Title removed to avoid overlapping with buttons
+        // Building 2
+        g2d.fillRect(200, (int)(getHeight() * 0.6), 60, (int)(getHeight() * 0.25));
         
-        // Draw buttons
-        for (int i = 0; i < buttonBounds.length; i++) {
-            drawButton(g2d, i);
+        // Building 3
+        g2d.fillRect(getWidth() - 150, (int)(getHeight() * 0.65), 100, (int)(getHeight() * 0.2));
+        
+        // Construction crane silhouette
+        g2d.setStroke(new BasicStroke(3));
+        g2d.setColor(new Color(100, 100, 100, 150));
+        
+        // Crane mast
+        int craneX = getWidth() - 100;
+        int craneBase = (int)(getHeight() * 0.85);
+        int craneTop = (int)(getHeight() * 0.3);
+        g2d.drawLine(craneX, craneBase, craneX, craneTop);
+        
+        // Crane arm
+        g2d.drawLine(craneX - 80, craneTop, craneX + 60, craneTop);
+        
+        // Crane hook
+        g2d.drawLine(craneX + 20, craneTop, craneX + 20, craneTop + 30);
+    }
+    
+    /**
+     * Draws ASCII logo with professional styling and blur effect
+     */
+    private void drawASCIILogo(Graphics2D g2d) {
+        // Position the ASCII logo at the top
+        int logoX = (getWidth() - asciiLogo.getWidth()) / 2;
+        int logoY = 50;
+        
+        // Draw professional ASCII logo with blur effect
+        drawProfessionalASCIILogo(g2d, logoX, logoY);
+    }
+    
+    /**
+     * Draws the ASCII logo with professional styling, blur effect and transparency
+     */
+    private void drawProfessionalASCIILogo(Graphics2D g2d, int x, int y) {
+        // Professional terminal window dimensions
+        int padding = 25;
+        int bgWidth = asciiLogo.getWidth() + (padding * 2);
+        int bgHeight = asciiLogo.getHeight() + (padding * 2);
+        int titleBarHeight = 30;
+        
+        // Enable high-quality rendering
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        
+        // Draw blur effect background (multiple layers for better blur)
+        for (int i = 8; i >= 0; i--) {
+            int alpha = 15 - i;
+            g2d.setColor(new Color(0, 0, 0, alpha));
+            g2d.fillRoundRect(x - padding - i, y - padding - titleBarHeight - i, 
+                            bgWidth + (i * 2), bgHeight + titleBarHeight + (i * 2), 15 + i, 15 + i);
         }
         
-        // Draw modern instructions with better styling
+        // Main terminal background with professional transparency
+        GradientPaint terminalBg = new GradientPaint(
+            x - padding, y - padding - titleBarHeight,
+            new Color(30, 30, 30, 200), // Dark professional background
+            x - padding, y - padding - titleBarHeight + bgHeight + titleBarHeight,
+            new Color(20, 20, 20, 180)  // Slightly lighter at bottom
+        );
+        g2d.setPaint(terminalBg);
+        g2d.fillRoundRect(x - padding, y - padding - titleBarHeight, bgWidth, bgHeight + titleBarHeight, 12, 12);
+        
+        // Professional title bar with gradient
+        GradientPaint titleBarGradient = new GradientPaint(
+            x - padding, y - padding - titleBarHeight,
+            new Color(60, 60, 60, 220), // Professional gray
+            x - padding, y - padding,
+            new Color(45, 45, 45, 200)  // Darker gray
+        );
+        g2d.setPaint(titleBarGradient);
+        g2d.fillRoundRect(x - padding, y - padding - titleBarHeight, bgWidth, titleBarHeight, 12, 12);
+        
+        // Terminal window controls (macOS style for professional look)
+        int controlY = y - padding - titleBarHeight + 8;
+        int controlSize = 12;
+        int controlSpacing = 20;
+        
+        // Close button (red)
+        GradientPaint redGradient = new GradientPaint(
+            x - padding + 15, controlY,
+            new Color(255, 95, 87),
+            x - padding + 15, controlY + controlSize,
+            new Color(255, 70, 61)
+        );
+        g2d.setPaint(redGradient);
+        g2d.fillOval(x - padding + 15, controlY, controlSize, controlSize);
+        
+        // Minimize button (yellow)
+        GradientPaint yellowGradient = new GradientPaint(
+            x - padding + 15 + controlSpacing, controlY,
+            new Color(255, 189, 46),
+            x - padding + 15 + controlSpacing, controlY + controlSize,
+            new Color(255, 159, 10)
+        );
+        g2d.setPaint(yellowGradient);
+        g2d.fillOval(x - padding + 15 + controlSpacing, controlY, controlSize, controlSize);
+        
+        // Maximize button (green)
+        GradientPaint greenGradient = new GradientPaint(
+            x - padding + 15 + (controlSpacing * 2), controlY,
+            new Color(39, 201, 63),
+            x - padding + 15 + (controlSpacing * 2), controlY + controlSize,
+            new Color(25, 185, 45)
+        );
+        g2d.setPaint(greenGradient);
+        g2d.fillOval(x - padding + 15 + (controlSpacing * 2), controlY, controlSize, controlSize);
+        
+        // Terminal title text
+        g2d.setColor(new Color(200, 200, 200, 180));
+        g2d.setFont(new Font("SF Pro Display", Font.PLAIN, 11));
+        String terminalTitle = "javaTower@terminal: ~/development";
+        g2d.drawString(terminalTitle, x - padding + 80, controlY + 9);
+        
+        // Professional border with subtle glow
+        g2d.setColor(new Color(100, 100, 100, 120));
+        g2d.setStroke(new BasicStroke(1));
+        g2d.drawRoundRect(x - padding, y - padding - titleBarHeight, bgWidth, bgHeight + titleBarHeight, 12, 12);
+        
+        // Inner glow effect
+        g2d.setColor(new Color(255, 255, 255, 30));
+        g2d.drawRoundRect(x - padding + 1, y - padding - titleBarHeight + 1, 
+                         bgWidth - 2, bgHeight + titleBarHeight - 2, 11, 11);
+        
+        // Draw the ASCII logo with professional colors
+        drawProfessionalASCIIText(g2d, x, y);
+    }
+    
+    /**
+     * Draws the ASCII text with professional color scheme
+     */
+    private void drawProfessionalASCIIText(Graphics2D g2d, int x, int y) {
+        // Get the ASCII logo lines
+        String[] logoLines = {
+            "     ██╗ █████╗ ██╗   ██╗ █████╗ ████████╗ ██████╗ ██╗    ██╗███████╗██████╗ ",
+            "     ██║██╔══██╗██║   ██║██╔══██╗╚══██╔══╝██╔═══██╗██║    ██║██╔════╝██╔══██╗",
+            "     ██║███████║██║   ██║███████║   ██║   ██║   ██║██║ █╗ ██║█████╗  ██████╔╝",
+            "██   ██║██╔══██║╚██╗ ██╔╝██╔══██║   ██║   ██║   ██║██║███╗██║██╔══╝  ██╔══██╗",
+            "╚█████╔╝██║  ██║ ╚████╔╝ ██║  ██║   ██║   ╚██████╔╝╚███╔███╔╝███████╗██║  ██║",
+            " ╚════╝ ╚═╝  ╚═╝  ╚═══╝  ╚═╝  ╚═╝   ╚═╝    ╚═════╝  ╚══╝╚══╝ ╚══════╝╚═╝  ╚═╝"
+        };
+        
+        String subtitle = "development by joseAlejandro";
+        
+        // Professional monospace font
+        g2d.setFont(new Font("Monaco", Font.BOLD, 14));
+        FontMetrics fm = g2d.getFontMetrics();
+        
+        int currentY = y;
+        
+        // Draw main logo with professional gradient colors
+        for (int i = 0; i < logoLines.length; i++) {
+            String line = logoLines[i];
+            
+            // Professional color scheme with subtle gradients
+            Color lineColor;
+            if (i < 3) {
+                // Top part - Professional blue to cyan gradient
+                float ratio = (float) i / 2;
+                lineColor = blendColors(new Color(52, 152, 219), new Color(46, 204, 113), ratio);
+            } else {
+                // Bottom part - Cyan to blue gradient
+                float ratio = (float) (i - 3) / 2;
+                lineColor = blendColors(new Color(46, 204, 113), new Color(155, 89, 182), ratio);
+            }
+            
+            // Add transparency for professional look
+            lineColor = new Color(lineColor.getRed(), lineColor.getGreen(), lineColor.getBlue(), 220);
+            
+            int lineWidth = fm.stringWidth(line);
+            int lineX = x + (asciiLogo.getWidth() - lineWidth) / 2;
+            
+            // Subtle shadow for depth
+            g2d.setColor(new Color(0, 0, 0, 100));
+            g2d.drawString(line, lineX + 1, currentY + 1);
+            
+            // Main text with professional color
+            g2d.setColor(lineColor);
+            g2d.drawString(line, lineX, currentY);
+            
+            currentY += fm.getHeight() + 2;
+        }
+        
+        // Add spacing before subtitle
+        currentY += 10;
+        
+        // Draw subtitle with professional styling
+        g2d.setFont(new Font("Monaco", Font.ITALIC, 12));
+        FontMetrics subFm = g2d.getFontMetrics();
+        int subWidth = subFm.stringWidth(subtitle);
+        int subX = x + (asciiLogo.getWidth() - subWidth) / 2;
+        
+        // Subtitle shadow
+        g2d.setColor(new Color(0, 0, 0, 120));
+        g2d.drawString(subtitle, subX + 1, currentY + 1);
+        
+        // Subtitle with professional amber color
+        g2d.setColor(new Color(241, 196, 15, 200));
+        g2d.drawString(subtitle, subX, currentY);
+    }
+    
+    /**
+     * Blends two colors for gradient effects
+     */
+    private Color blendColors(Color color1, Color color2, float ratio) {
+        ratio = Math.max(0.0f, Math.min(1.0f, ratio));
+        
+        int red = (int) (color1.getRed() * (1 - ratio) + color2.getRed() * ratio);
+        int green = (int) (color1.getGreen() * (1 - ratio) + color2.getGreen() * ratio);
+        int blue = (int) (color1.getBlue() * (1 - ratio) + color2.getBlue() * ratio);
+        
+        return new Color(red, green, blue);
+    }
+    
+    /**
+     * Draws ASCII subtitle below the main title
+     */
+    private void drawASCIISubtitle(Graphics2D g2d) {
+        // ASCII art for "development by joseAlejandro"
+        String[] asciiLines = {
+            "█▀▄ █▀▀ █ █ █▀▀ █   █▀█ █▀█ █▄█ █▀▀ █▄█ ▀█▀   █▀▄ █ █",
+            "█ █ █▀▀ ▀▄▀ █▀▀ █   █ █ █▀▀ █▀█ █▀▀ █ █  █    █▀▄ ▀█▀",
+            "█▄▀ █▄▄  █  █▄▄ █▄▄ █▄█ █   █ █ █▄▄ █ █  █    █▄▀  █ ",
+            "",
+            "  ▄▄█ █▀█ █▀▀ █▀▀ ▄▀█ █   █▀▀ ▄▄█ ▄▀█ █▄█ █▀▄ █▀█ █▀█",
+            "  █▄█ █▄█ ▄▄█ █▄▄ █▀█ █▄▄ █▄▄ █▄█ █▀█ █ █ █▀▄ █▄█ █▄█"
+        };
+        
+        // Use monospace font for ASCII art
+        g2d.setFont(new Font("Monospaced", Font.BOLD, 12));
+        FontMetrics fm = g2d.getFontMetrics();
+        
+        int startY = 280; // Position below ASCII logo and main title
+        
+        for (int i = 0; i < asciiLines.length; i++) {
+            String line = asciiLines[i];
+            if (!line.isEmpty()) {
+                int lineX = (getWidth() - fm.stringWidth(line)) / 2;
+                int lineY = startY + (i * (fm.getHeight() + 2));
+                
+                // Shadow for visibility
+                g2d.setColor(new Color(0, 0, 0, 180));
+                g2d.drawString(line, lineX + 1, lineY + 1);
+                
+                // Main ASCII text in complementary color
+                g2d.setColor(new Color(46, 204, 113)); // Green that complements the blue title
+                g2d.drawString(line, lineX, lineY);
+            }
+        }
+    }
+    
+    /**
+     * Draws the main javaTower title with new color scheme
+     */
+    private void drawMainTitle(Graphics2D g2d) {
+        String title = "javaTower";
+        g2d.setFont(fontManager.getFont(FontManager.LOGO_SIZE + 10, Font.BOLD));
+        FontMetrics fm = g2d.getFontMetrics();
+        
+        int titleX = (getWidth() - fm.stringWidth(title)) / 2;
+        int titleY = 200; // Position below ASCII logo
+        
+        // Strong shadow for visibility over image
+        g2d.setColor(new Color(0, 0, 0, 220));
+        g2d.drawString(title, titleX + 3, titleY + 3);
+        
+        // Main title with new color scheme - professional blue/teal
+        GradientPaint titleGradient = new GradientPaint(
+            titleX, titleY - fm.getAscent(),
+            new Color(41, 128, 185), // Professional blue
+            titleX, titleY,
+            new Color(52, 152, 219)  // Lighter blue
+        );
+        g2d.setPaint(titleGradient);
+        g2d.drawString(title, titleX, titleY);
+    }
+    
+    /**
+     * Draws buttons that look like construction blocks
+     */
+    private void drawBlockButton(Graphics2D g2d, int index) {
+        Rectangle bounds = buttonBounds[index];
+        boolean isSelected = (index == selectedButton);
+        
+        Color blockColor = getBlockColor(index);
+        
+        // Draw 3D block effect
+        draw3DBlock(g2d, bounds, blockColor, isSelected);
+        
+        // Draw button text
+        drawBlockText(g2d, bounds, buttonTexts[index], isSelected);
+        
+        // Add construction details
+        drawBlockDetails(g2d, bounds, blockColor, isSelected);
+    }
+    
+    /**
+     * Draws a 3D construction block
+     */
+    private void draw3DBlock(Graphics2D g2d, Rectangle bounds, Color baseColor, boolean isSelected) {
+        // Calculate 3D offset
+        int offset = isSelected ? 8 : 6;
+        
+        // Draw shadow (bottom-right face)
+        Color shadowColor = new Color(
+            Math.max(0, baseColor.getRed() - 80),
+            Math.max(0, baseColor.getGreen() - 80),
+            Math.max(0, baseColor.getBlue() - 80)
+        );
+        g2d.setColor(shadowColor);
+        
+        // Right face
+        int[] rightX = {bounds.x + bounds.width, bounds.x + bounds.width + offset, 
+                       bounds.x + bounds.width + offset, bounds.x + bounds.width};
+        int[] rightY = {bounds.y, bounds.y - offset, 
+                       bounds.y + bounds.height - offset, bounds.y + bounds.height};
+        g2d.fillPolygon(rightX, rightY, 4);
+        
+        // Top face
+        int[] topX = {bounds.x, bounds.x + offset, 
+                     bounds.x + bounds.width + offset, bounds.x + bounds.width};
+        int[] topY = {bounds.y, bounds.y - offset, 
+                     bounds.y - offset, bounds.y};
+        g2d.fillPolygon(topX, topY, 4);
+        
+        // Main face (front)
+        GradientPaint blockGradient = new GradientPaint(
+            bounds.x, bounds.y,
+            isSelected ? brightenColor(baseColor, 30) : baseColor,
+            bounds.x, bounds.y + bounds.height,
+            isSelected ? baseColor : darkenColor(baseColor, 20)
+        );
+        g2d.setPaint(blockGradient);
+        g2d.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        
+        // Block outline
+        g2d.setColor(darkenColor(baseColor, 40));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        
+        // 3D edges
+        g2d.setColor(darkenColor(shadowColor, 20));
+        g2d.setStroke(new BasicStroke(1));
+        g2d.drawPolygon(rightX, rightY, 4);
+        g2d.drawPolygon(topX, topY, 4);
+        
+        // Selection glow
+        if (isSelected) {
+            g2d.setColor(new Color(255, 255, 255, 100));
+            g2d.setStroke(new BasicStroke(3));
+            g2d.drawRect(bounds.x - 2, bounds.y - 2, bounds.width + 4, bounds.height + 4);
+        }
+    }
+    
+    /**
+     * Draws text on the block
+     */
+    private void drawBlockText(Graphics2D g2d, Rectangle bounds, String text, boolean isSelected) {
+        g2d.setFont(fontManager.getFont(FontManager.MENU_SIZE, Font.BOLD));
+        FontMetrics fm = g2d.getFontMetrics();
+        
+        int textX = bounds.x + (bounds.width - fm.stringWidth(text)) / 2;
+        int textY = bounds.y + (bounds.height + fm.getAscent()) / 2 - 2;
+        
+        // Text shadow for depth
+        g2d.setColor(new Color(0, 0, 0, 200));
+        g2d.drawString(text, textX + 2, textY + 2);
+        
+        // Main text
+        g2d.setColor(isSelected ? Color.WHITE : new Color(240, 240, 240));
+        g2d.drawString(text, textX, textY);
+    }
+    
+    /**
+     * Draws construction block details (rivets, texture)
+     */
+    private void drawBlockDetails(Graphics2D g2d, Rectangle bounds, Color baseColor, boolean isSelected) {
+        // Draw rivets/bolts on the corners
+        Color rivetColor = darkenColor(baseColor, 60);
+        g2d.setColor(rivetColor);
+        
+        int rivetSize = 4;
+        // Top-left rivet
+        g2d.fillOval(bounds.x + 8, bounds.y + 8, rivetSize, rivetSize);
+        // Top-right rivet
+        g2d.fillOval(bounds.x + bounds.width - 12, bounds.y + 8, rivetSize, rivetSize);
+        // Bottom-left rivet
+        g2d.fillOval(bounds.x + 8, bounds.y + bounds.height - 12, rivetSize, rivetSize);
+        // Bottom-right rivet
+        g2d.fillOval(bounds.x + bounds.width - 12, bounds.y + bounds.height - 12, rivetSize, rivetSize);
+        
+        // Add highlight to rivets
+        g2d.setColor(brightenColor(rivetColor, 40));
+        g2d.fillOval(bounds.x + 8, bounds.y + 8, rivetSize/2, rivetSize/2);
+        g2d.fillOval(bounds.x + bounds.width - 12, bounds.y + 8, rivetSize/2, rivetSize/2);
+        g2d.fillOval(bounds.x + 8, bounds.y + bounds.height - 12, rivetSize/2, rivetSize/2);
+        g2d.fillOval(bounds.x + bounds.width - 12, bounds.y + bounds.height - 12, rivetSize/2, rivetSize/2);
+        
+        // Add subtle texture lines
+        g2d.setColor(new Color(baseColor.getRed(), baseColor.getGreen(), baseColor.getBlue(), 50));
+        g2d.setStroke(new BasicStroke(1));
+        for (int i = 0; i < 3; i++) {
+            int lineY = bounds.y + (bounds.height / 4) * (i + 1);
+            g2d.drawLine(bounds.x + 15, lineY, bounds.x + bounds.width - 15, lineY);
+        }
+    }
+    
+    /**
+     * Draws construction-themed instructions
+     */
+    private void drawInstructions(Graphics2D g2d) {
         g2d.setFont(fontManager.getFont(FontManager.SMALL_SIZE));
         String instructions = "Usa las flechas y ENTER para navegar, o haz clic con el ratón";
         FontMetrics fm = g2d.getFontMetrics();
         int instrX = (getWidth() - fm.stringWidth(instructions)) / 2;
         int instrY = getHeight() - 25;
         
-        // Background for instructions
-        g2d.setColor(new Color(0, 0, 0, 100));
-        g2d.fillRoundRect(instrX - 10, instrY - fm.getAscent() - 3, 
-                         fm.stringWidth(instructions) + 20, fm.getHeight() + 6, 8, 8);
+        // Construction sign background
+        g2d.setColor(new Color(255, 165, 0)); // Orange construction color
+        g2d.fillRoundRect(instrX - 15, instrY - fm.getAscent() - 5, 
+                         fm.stringWidth(instructions) + 30, fm.getHeight() + 10, 10, 10);
         
-        // Instructions text with modern color
-        g2d.setColor(new Color(BUTTON_PRIMARY.getRed(), BUTTON_PRIMARY.getGreen(), BUTTON_PRIMARY.getBlue(), 255));
+        // Black border
+        g2d.setColor(Color.BLACK);
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRoundRect(instrX - 15, instrY - fm.getAscent() - 5, 
+                         fm.stringWidth(instructions) + 30, fm.getHeight() + 10, 10, 10);
+        
+        // Instructions text
+        g2d.setColor(Color.BLACK);
         g2d.drawString(instructions, instrX, instrY);
-        
-        g2d.dispose();
-    }
-    
-    private void drawASCIILogo(Graphics2D g2d) {
-        // Position the ASCII logo in the upper area, above everything else
-        int logoX = (getWidth() - asciiLogo.getWidth()) / 2;
-        int logoY = 40; // Positioned high to avoid covering the image title
-        
-        // Create a semi-transparent background with blur effect
-        int padding = 20;
-        int bgWidth = asciiLogo.getWidth() + (padding * 2);
-        int bgHeight = asciiLogo.getHeight() + (padding * 2);
-        
-        // Draw blurred background
-        g2d.setColor(new Color(0, 0, 0, 100)); // Semi-transparent black
-        g2d.fillRoundRect(logoX - padding, logoY - padding - 30, bgWidth, bgHeight, 15, 15);
-        
-        // Draw professional border with gradient effect
-        GradientPaint borderGradient = new GradientPaint(
-            logoX - padding, logoY - padding - 30,
-            new Color(BUTTON_PRIMARY.getRed(), BUTTON_PRIMARY.getGreen(), BUTTON_PRIMARY.getBlue(), 200),
-            logoX - padding, logoY - padding - 30 + bgHeight,
-            new Color(BUTTON_SECONDARY.getRed(), BUTTON_SECONDARY.getGreen(), BUTTON_SECONDARY.getBlue(), 150)
-        );
-        g2d.setPaint(borderGradient);
-        g2d.setStroke(new BasicStroke(3));
-        g2d.drawRoundRect(logoX - padding, logoY - padding - 30, bgWidth, bgHeight, 15, 15);
-        
-        // Draw the ASCII logo without terminal background (we created our own)
-        asciiLogo.render(g2d, logoX, logoY);
-    }
-    
-    private void drawTitle(Graphics2D g2d) {
-        // Position the title below the ASCII logo but above the image title
-        String title = "javaTower";
-        g2d.setFont(fontManager.getFont(FontManager.LOGO_SIZE + 4, Font.BOLD));
-        FontMetrics fm = g2d.getFontMetrics();
-        
-        int titleX = (getWidth() - fm.stringWidth(title)) / 2;
-        int titleY = 40 + asciiLogo.getHeight() + 50; // Below ASCII logo with some spacing
-        
-        // Modern glass effect background for title
-        int titlePadding = 20;
-        GradientPaint titleBg = new GradientPaint(
-            titleX - titlePadding, titleY - fm.getAscent() - 5,
-            new Color(BUTTON_PRIMARY.getRed(), BUTTON_PRIMARY.getGreen(), BUTTON_PRIMARY.getBlue(), 80),
-            titleX - titlePadding, titleY + 10,
-            new Color(BUTTON_SECONDARY.getRed(), BUTTON_SECONDARY.getGreen(), BUTTON_SECONDARY.getBlue(), 60)
-        );
-        g2d.setPaint(titleBg);
-        g2d.fillRoundRect(titleX - titlePadding, titleY - fm.getAscent() - 5, 
-                         fm.stringWidth(title) + (titlePadding * 2), fm.getHeight() + 10, 15, 15);
-        
-        // Modern border for title
-        g2d.setColor(new Color(255, 255, 255, 100));
-        g2d.setStroke(new BasicStroke(1));
-        g2d.drawRoundRect(titleX - titlePadding, titleY - fm.getAscent() - 5, 
-                         fm.stringWidth(title) + (titlePadding * 2), fm.getHeight() + 10, 15, 15);
-        
-        // Enhanced shadow with modern colors
-        g2d.setColor(new Color(TITLE_SHADOW.getRed(), TITLE_SHADOW.getGreen(), TITLE_SHADOW.getBlue(), 200));
-        g2d.drawString(title, titleX + 2, titleY + 2);
-        
-        // Main title with modern color
-        g2d.setColor(TITLE_COLOR);
-        g2d.drawString(title, titleX, titleY);
-    }
-    
-    private void drawButton(Graphics2D g2d, int index) {
-        Rectangle bounds = buttonBounds[index];
-        boolean isSelected = (index == selectedButton);
-        
-        // Modern button design with different colors for each button type
-        Color baseColor = getButtonColor(index);
-        Color hoverColor = isSelected ? BUTTON_HOVER : baseColor;
-        
-        // Create modern glass effect background
-        g2d.setColor(new Color(255, 255, 255, 20)); // Light glass effect
-        g2d.fillRoundRect(bounds.x - 2, bounds.y - 2, bounds.width + 4, bounds.height + 4, 20, 20);
-        
-        // Main button gradient with modern colors
-        GradientPaint buttonGradient = new GradientPaint(
-            bounds.x, bounds.y, new Color(hoverColor.getRed(), hoverColor.getGreen(), hoverColor.getBlue(), 200),
-            bounds.x, bounds.y + bounds.height, new Color(hoverColor.getRed(), hoverColor.getGreen(), hoverColor.getBlue(), 160)
-        );
-        
-        g2d.setPaint(buttonGradient);
-        g2d.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 18, 18);
-        
-        // Modern border with glow effect
-        if (isSelected) {
-            // Outer glow for selected button
-            g2d.setColor(new Color(hoverColor.getRed(), hoverColor.getGreen(), hoverColor.getBlue(), 100));
-            g2d.setStroke(new BasicStroke(4));
-            g2d.drawRoundRect(bounds.x - 2, bounds.y - 2, bounds.width + 4, bounds.height + 4, 22, 22);
-            
-            // Inner bright border
-            g2d.setColor(new Color(255, 255, 255, 200));
-            g2d.setStroke(new BasicStroke(2));
-            g2d.drawRoundRect(bounds.x + 1, bounds.y + 1, bounds.width - 2, bounds.height - 2, 16, 16);
-        } else {
-            // Subtle border for unselected buttons
-            g2d.setColor(new Color(255, 255, 255, 120));
-            g2d.setStroke(new BasicStroke(1));
-            g2d.drawRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 18, 18);
-        }
-        
-        // Modern button text with shadow
-        g2d.setFont(fontManager.getFont(FontManager.MENU_SIZE, Font.BOLD));
-        FontMetrics fm = g2d.getFontMetrics();
-        
-        String text = buttonTexts[index];
-        int textX = bounds.x + (bounds.width - fm.stringWidth(text)) / 2;
-        int textY = bounds.y + (bounds.height + fm.getAscent()) / 2 - 2;
-        
-        // Text shadow for depth
-        g2d.setColor(new Color(0, 0, 0, 150));
-        g2d.drawString(text, textX + 1, textY + 1);
-        
-        // Main text
-        g2d.setColor(BUTTON_TEXT);
-        g2d.drawString(text, textX, textY);
     }
     
     /**
-     * Gets the appropriate color for each button type with professional palette
+     * Gets construction block colors that complement the background image
      */
-    private Color getButtonColor(int index) {
+    private Color getBlockColor(int index) {
         switch (index) {
-            case 0: return BUTTON_SECONDARY;  // Easy - Success Green
-            case 1: return BUTTON_PRIMARY;   // Normal - Professional Blue  
-            case 2: return BUTTON_ACCENT;    // Hard - Warning Red
-            case 3: return new Color(147, 51, 234);  // Movements - Purple
-            case 4: return BUTTON_SPECIAL;   // High Scores - Amber
-            case 5: return BUTTON_EXIT;      // Exit - Neutral Gray
-            default: return BUTTON_PRIMARY;
+            case 0: return new Color(39, 174, 96);    // Easy - Forest Green (professional)
+            case 1: return new Color(41, 128, 185);   // Normal - Ocean Blue (matches image tones)  
+            case 2: return new Color(192, 57, 43);    // Hard - Deep Red (strong contrast)
+            case 3: return new Color(142, 68, 173);   // Movements - Royal Purple
+            case 4: return new Color(211, 84, 0);     // High Scores - Construction Orange
+            case 5: return new Color(127, 140, 141);  // Exit - Professional Gray
+            default: return new Color(41, 128, 185);
         }
+    }
+    
+    /**
+     * Brightens a color by the specified amount
+     */
+    private Color brightenColor(Color color, int amount) {
+        return new Color(
+            Math.min(255, color.getRed() + amount),
+            Math.min(255, color.getGreen() + amount),
+            Math.min(255, color.getBlue() + amount)
+        );
+    }
+    
+    /**
+     * Darkens a color by the specified amount
+     */
+    private Color darkenColor(Color color, int amount) {
+        return new Color(
+            Math.max(0, color.getRed() - amount),
+            Math.max(0, color.getGreen() - amount),
+            Math.max(0, color.getBlue() - amount)
+        );
     }
 }

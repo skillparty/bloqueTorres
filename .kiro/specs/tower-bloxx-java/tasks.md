@@ -165,3 +165,25 @@
     - Test on different Java versions and operating systems
     - Prepare for GitHub repository upload
     - _Requirements: 7.4_
+
+- [ ] 12. CRITICAL FIXES - Crane Movement and Visual Design
+  - [x] 12.1 Fix crane visual design and movement
+    - Redesign crane to show proper construction crane with rope/cable
+    - Fix rope swinging animation to be subtle left-right movement
+    - Ensure crane movement is visible and responsive
+    - Test crane movement at different difficulty levels
+    - _Requirements: 4.1, 4.2, 6.1, 6.2_
+  
+  - [x] 12.2 Implement dynamic background system
+    - Create height-based background transitions
+    - Add ground level, mid-rise, high-rise, and sky backgrounds
+    - Implement smooth transitions as tower height increases
+    - Test background changes at different tower heights
+    - _Requirements: 3.1, 6.5_
+  
+  - [x] 12.3 Final gameplay polish and testing
+    - Test complete game flow with fixed crane and backgrounds
+    - Verify all visual elements work correctly together
+    - Ensure game difficulty progression is challenging but fair
+    - Perform final integration testing
+    - _Requirements: All visual and gameplay requirements_

@@ -2,6 +2,10 @@ package com.skillparty.towerblox.ui;
 
 import com.skillparty.towerblox.game.GameEngine;
 import com.skillparty.towerblox.ui.components.TowerVisualizationPanel;
+import com.skillparty.towerblox.effects.ProfessionalEffects;
+import com.skillparty.towerblox.game.physics.Crane;
+import com.skillparty.towerblox.game.physics.Tower;
+import com.skillparty.towerblox.game.physics.Block;
 // import com.skillparty.towerblox.ui.components.FontManager;
 // import com.skillparty.towerblox.utils.Constants;
 
@@ -33,6 +37,7 @@ public class GamePanel extends JPanel implements KeyListener {
     // Visual effects
     private List<ScoreEffect> scoreEffects;
     private List<ComboEffect> comboEffects;
+    private ProfessionalEffects professionalEffects;
     
     // Pause overlay
     private boolean showPauseOverlay = false;
@@ -113,6 +118,7 @@ public class GamePanel extends JPanel implements KeyListener {
         // this.fontManager = FontManager.getInstance();
         this.scoreEffects = new ArrayList<>();
         this.comboEffects = new ArrayList<>();
+        this.professionalEffects = new ProfessionalEffects();
         
         initializePanel();
         setupTimer();
@@ -201,14 +207,40 @@ public class GamePanel extends JPanel implements KeyListener {
             int x = (int) gameEngine.getCrane().getX();
             int y = (int) gameEngine.getCrane().getY() + 100;
             
-            // Add score effect
+            // Add legacy effects for compatibility
             Color scoreColor = score > 500 ? Color.YELLOW : Color.WHITE;
             scoreEffects.add(new ScoreEffect(x, y, score, scoreColor));
             
-            // Add combo effect if combo > 1
             if (combo > 1) {
                 comboEffects.add(new ComboEffect(x + 50, y - 20, combo));
             }
+            
+            // Add professional effects
+            if (professionalEffects != null) {
+                professionalEffects.addScoreEffect(x, y, score);
+                
+                if (score > 1500) {
+                    professionalEffects.addPerfectPlacementEffect(x, y);
+                } else if (score > 500) {
+                    professionalEffects.addGoodPlacementEffect(x, y);
+                }
+                
+                if (combo > 1) {
+                    professionalEffects.addComboEffect(x + 50, y - 20, combo);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Shows milestone effect when reaching certain heights
+     */
+    public void showMilestoneEffect(int milestone) {
+        if (gameEngine != null && gameEngine.getCrane() != null && professionalEffects != null) {
+            int x = (int) gameEngine.getCrane().getX();
+            int y = (int) gameEngine.getCrane().getY() + 50;
+            
+            professionalEffects.addMilestoneEffect(x, y, milestone);
         }
     }
     
@@ -219,6 +251,11 @@ public class GamePanel extends JPanel implements KeyListener {
         // Remove expired effects
         scoreEffects.removeIf(ScoreEffect::isExpired);
         comboEffects.removeIf(ComboEffect::isExpired);
+        
+        // Update professional effects
+        if (professionalEffects != null) {
+            professionalEffects.update(16); // 16ms delta time for 60 FPS
+        }
     }
     
     /**
@@ -251,6 +288,18 @@ public class GamePanel extends JPanel implements KeyListener {
             renderGameUI(g2d);
             renderEffects(g2d);
             
+            // Render professional effects (with camera transformation)
+            if (professionalEffects != null) {
+                var originalTransform = g2d.getTransform();
+                if (gameEngine.getTower() != null) {
+                    // Apply same camera transformation as game objects
+                    double cameraY = calculateCameraOffset();
+                    g2d.translate(0, cameraY);
+                }
+                professionalEffects.render(g2d);
+                g2d.setTransform(originalTransform);
+            }
+            
             if (gameEngine.isPaused() || showPauseOverlay) {
                 renderPauseOverlay(g2d);
             }
@@ -267,16 +316,365 @@ public class GamePanel extends JPanel implements KeyListener {
     }
     
     /**
-     * Renders the simplified game UI
+     * Renders the professional game UI with enhanced information
      */
     private void renderGameUI(Graphics2D g2d) {
-        // Controls help (bottom)
-        g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-        g2d.setColor(Color.LIGHT_GRAY);
-        String controls = "ESPACIO: Soltar | P: Pausa | ESC: Menú";
+        // Professional HUD panel (top-left)
+        renderMainHUD(g2d);
+        
+        // Crane status panel (top-right)
+        renderCraneStatus(g2d);
+        
+        // Tower progress indicator (right side)
+        renderTowerProgress(g2d);
+        
+        // Performance indicators (bottom-left)
+        renderPerformanceInfo(g2d);
+        
+        // Controls help (bottom-center)
+        renderControlsHelp(g2d);
+        
+        // Game mode indicator (top-center)
+        renderGameModeInfo(g2d);
+    }
+    
+    /**
+     * Renders the main HUD with score, lives, and essential info
+     */
+    private void renderMainHUD(Graphics2D g2d) {
+        // Professional HUD background
+        g2d.setColor(new Color(0, 0, 0, 180));
+        g2d.fillRoundRect(10, 10, 280, 140, 15, 15);
+        
+        // HUD border with gradient effect
+        g2d.setColor(new Color(59, 130, 246));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRoundRect(10, 10, 280, 140, 15, 15);
+        
+        // Title
+        g2d.setFont(new Font("Arial", Font.BOLD, 16));
+        g2d.setColor(new Color(248, 250, 252));
+        g2d.drawString("TOWER BLOXX", 20, 30);
+        
+        // Score with formatting
+        g2d.setFont(new Font("Arial", Font.BOLD, 14));
+        g2d.setColor(Color.YELLOW);
+        String scoreText = String.format("Score: %,d", currentScore);
+        g2d.drawString(scoreText, 20, 55);
+        
+        // Tower height with progress
+        if (gameEngine != null && gameEngine.getTower() != null) {
+            int height = gameEngine.getTower().getHeight();
+            g2d.setColor(Color.CYAN);
+            String heightText = String.format("Height: %d/163 floors", height);
+            g2d.drawString(heightText, 20, 75);
+            
+            // Progress bar for height
+            int barWidth = 200;
+            int barHeight = 8;
+            int barX = 20;
+            int barY = 80;
+            
+            // Background
+            g2d.setColor(new Color(60, 60, 60));
+            g2d.fillRoundRect(barX, barY, barWidth, barHeight, 4, 4);
+            
+            // Progress
+            double progress = Math.min(1.0, height / 163.0);
+            int progressWidth = (int)(barWidth * progress);
+            
+            // Color based on progress
+            Color progressColor;
+            if (progress < 0.3) progressColor = Color.GREEN;
+            else if (progress < 0.6) progressColor = Color.YELLOW;
+            else if (progress < 0.9) progressColor = Color.ORANGE;
+            else progressColor = Color.RED;
+            
+            g2d.setColor(progressColor);
+            g2d.fillRoundRect(barX, barY, progressWidth, barHeight, 4, 4);
+            
+            // Border
+            g2d.setColor(Color.WHITE);
+            g2d.setStroke(new BasicStroke(1));
+            g2d.drawRoundRect(barX, barY, barWidth, barHeight, 4, 4);
+        }
+        
+        // Lives with heart icons
+        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+        g2d.setColor(Color.WHITE);
+        g2d.drawString("Lives:", 20, 105);
+        
+        for (int i = 0; i < 3; i++) {
+            if (gameEngine != null) {
+                // Use actual lives from game engine if available
+                boolean hasLife = i < gameEngine.getLives();
+                g2d.setColor(hasLife ? Color.RED : new Color(60, 60, 60));
+            } else {
+                g2d.setColor(Color.RED);
+            }
+            
+            // Draw heart shape
+            int heartX = 70 + i * 25;
+            int heartY = 95;
+            drawHeart(g2d, heartX, heartY, 8);
+        }
+        
+        // Combo indicator
+        if (gameEngine != null && gameEngine.getScoreManager() != null) {
+            int combo = gameEngine.getScoreManager().getCurrentCombo();
+            if (combo > 1) {
+                g2d.setFont(new Font("Arial", Font.BOLD, 12));
+                g2d.setColor(Color.ORANGE);
+                g2d.drawString("Combo: x" + combo, 20, 125);
+            }
+        }
+        
+        // Difficulty indicator
+        if (gameEngine != null) {
+            g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+            g2d.setColor(Color.LIGHT_GRAY);
+            String difficulty = gameEngine.getCurrentDifficulty().getDisplayName();
+            g2d.drawString("Difficulty: " + difficulty, 20, 140);
+        }
+    }
+    
+    /**
+     * Draws a heart shape for life indicators
+     */
+    private void drawHeart(Graphics2D g2d, int x, int y, int size) {
+        // Simple heart approximation using circles and triangle
+        g2d.fillOval(x - size/2, y - size/2, size, size/2);
+        g2d.fillOval(x, y - size/2, size, size/2);
+        
+        int[] xPoints = {x, x + size, x + size/2};
+        int[] yPoints = {y, y, y + size};
+        g2d.fillPolygon(xPoints, yPoints, 3);
+    }
+    
+    /**
+     * Renders crane status and movement information
+     */
+    private void renderCraneStatus(Graphics2D g2d) {
+        if (gameEngine == null || gameEngine.getCrane() == null) return;
+        
+        int panelX = getWidth() - 300;
+        int panelY = 10;
+        int panelWidth = 280;
+        int panelHeight = 120;
+        
+        // Background
+        g2d.setColor(new Color(0, 0, 0, 180));
+        g2d.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 15, 15);
+        
+        // Border
+        g2d.setColor(new Color(16, 185, 129));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 15, 15);
+        
+        // Title
+        g2d.setFont(new Font("Arial", Font.BOLD, 14));
+        g2d.setColor(Color.WHITE);
+        g2d.drawString("CRANE STATUS", panelX + 10, panelY + 20);
+        
+        Crane crane = gameEngine.getCrane();
+        
+        // Movement pattern
+        g2d.setFont(new Font("Arial", Font.PLAIN, 12));
+        g2d.setColor(Color.CYAN);
+        String pattern = getMovementPatternName(gameEngine.getTower().getHeight());
+        g2d.drawString("Pattern: " + pattern, panelX + 10, panelY + 40);
+        
+        // Speed indicator
+        double speedRatio = crane.getSpeed() / crane.getBaseSpeed();
+        Color speedColor = speedRatio < 1.5 ? Color.GREEN : 
+                          speedRatio < 2.5 ? Color.YELLOW : Color.RED;
+        g2d.setColor(speedColor);
+        g2d.drawString(String.format("Speed: %.1fx", speedRatio), panelX + 10, panelY + 55);
+        
+        // Range indicator
+        double rangePercent = (crane.getSwingRange() / (800 * 0.3)) * 100;
+        g2d.setColor(Color.ORANGE);
+        g2d.drawString(String.format("Range: %.0f%%", rangePercent), panelX + 10, panelY + 70);
+        
+        // Position indicator
+        g2d.setColor(Color.WHITE);
+        g2d.drawString(String.format("Position: %.0f", crane.getX()), panelX + 10, panelY + 85);
+        
+        // Direction indicator
+        String direction = crane.isMovingRight() ? "→ RIGHT" : "← LEFT";
+        g2d.setColor(crane.isMovingRight() ? Color.GREEN : Color.BLUE);
+        g2d.drawString(direction, panelX + 10, panelY + 100);
+        
+        // Precision zone indicator
+        renderPrecisionIndicator(g2d, panelX + 150, panelY + 40, crane);
+    }
+    
+    /**
+     * Renders precision timing indicator
+     */
+    private void renderPrecisionIndicator(Graphics2D g2d, int x, int y, Crane crane) {
+        // Calculate precision
+        double centerX = 400; // Game center
+        double distance = Math.abs(crane.getX() - centerX);
+        double maxDistance = crane.getSwingRange();
+        boolean inPerfectZone = distance < (maxDistance * 0.2);
+        
+        // Precision circle
+        g2d.setColor(inPerfectZone ? Color.GREEN : Color.RED);
+        g2d.fillOval(x, y, 20, 20);
+        
+        // Label
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 10));
+        g2d.drawString(inPerfectZone ? "PERFECT" : "TIMING", x + 25, y + 12);
+        
+        // Precision bar
+        int barWidth = 80;
+        int barX = x;
+        int barY = y + 25;
+        
+        // Background
+        g2d.setColor(Color.DARK_GRAY);
+        g2d.fillRect(barX, barY, barWidth, 6);
+        
+        // Perfect zone
+        int perfectStart = barWidth * 2 / 5;
+        int perfectWidth = barWidth / 5;
+        g2d.setColor(new Color(0, 255, 0, 100));
+        g2d.fillRect(barX + perfectStart, barY, perfectWidth, 6);
+        
+        // Current position
+        int currentPos = (int)((distance / maxDistance) * (barWidth / 2));
+        if (crane.getX() < centerX) {
+            currentPos = barWidth / 2 - currentPos;
+        } else {
+            currentPos = barWidth / 2 + currentPos;
+        }
+        
+        g2d.setColor(Color.YELLOW);
+        g2d.fillRect(barX + currentPos - 1, barY - 2, 2, 10);
+    }
+    
+    /**
+     * Renders tower progress visualization
+     */
+    private void renderTowerProgress(Graphics2D g2d) {
+        if (gameEngine == null || gameEngine.getTower() == null) return;
+        
+        int panelX = getWidth() - 80;
+        int panelY = 150;
+        int panelWidth = 70;
+        int panelHeight = 300;
+        
+        // Background
+        g2d.setColor(new Color(0, 0, 0, 150));
+        g2d.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 10, 10);
+        
+        // Border
+        g2d.setColor(new Color(99, 102, 241));
+        g2d.setStroke(new BasicStroke(1));
+        g2d.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 10, 10);
+        
+        // Title
+        g2d.setFont(new Font("Arial", Font.BOLD, 10));
+        g2d.setColor(Color.WHITE);
+        g2d.drawString("TOWER", panelX + 15, panelY - 5);
+        
+        // Tower visualization (last 20 blocks)
+        Tower tower = gameEngine.getTower();
+        int towerHeight = tower.getHeight();
+        int startBlock = Math.max(0, towerHeight - 20);
+        
+        for (int i = startBlock; i < towerHeight; i++) {
+            int blockY = panelY + panelHeight - ((i - startBlock + 1) * (panelHeight / 20));
+            
+            // Block color based on stability
+            if (i < tower.getBlocks().size()) {
+                Block block = tower.getBlocks().get(i);
+                double stability = block.getStability();
+                Color blockColor;
+                if (stability >= 0.9) blockColor = Color.GREEN;
+                else if (stability >= 0.7) blockColor = Color.YELLOW;
+                else if (stability >= 0.5) blockColor = Color.ORANGE;
+                else blockColor = Color.RED;
+                
+                g2d.setColor(blockColor);
+                g2d.fillRect(panelX + 10, blockY, panelWidth - 20, panelHeight / 20 - 1);
+            }
+        }
+        
+        // Crane position indicator
+        g2d.setColor(Color.CYAN);
+        g2d.fillRect(panelX + 5, panelY - 10, panelWidth - 10, 3);
+    }
+    
+    /**
+     * Renders performance information
+     */
+    private void renderPerformanceInfo(Graphics2D g2d) {
+        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+        g2d.setColor(new Color(150, 150, 150));
+        
+        // FPS counter
+        g2d.drawString(String.format("FPS: %.1f", renderFPS), 10, getHeight() - 40);
+        
+        // Game time
+        if (gameEngine != null) {
+            long gameTime = gameEngine.getGameTime();
+            int minutes = (int)(gameTime / 60000);
+            int seconds = (int)((gameTime % 60000) / 1000);
+            g2d.drawString(String.format("Time: %02d:%02d", minutes, seconds), 10, getHeight() - 25);
+        }
+    }
+    
+    /**
+     * Renders enhanced controls help
+     */
+    private void renderControlsHelp(Graphics2D g2d) {
+        // Background for controls
+        g2d.setColor(new Color(0, 0, 0, 120));
+        g2d.fillRoundRect(getWidth()/2 - 200, getHeight() - 35, 400, 25, 10, 10);
+        
+        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+        g2d.setColor(Color.WHITE);
+        String controls = "SPACE: Drop Block  |  P: Pause  |  ESC: Menu  |  M: Movement Recorder";
         FontMetrics fm = g2d.getFontMetrics();
         int controlsWidth = fm.stringWidth(controls);
-        g2d.drawString(controls, (getWidth() - controlsWidth) / 2, getHeight() - 10);
+        g2d.drawString(controls, (getWidth() - controlsWidth) / 2, getHeight() - 15);
+    }
+    
+    /**
+     * Renders game mode information
+     */
+    private void renderGameModeInfo(Graphics2D g2d) {
+        if (gameEngine == null) return;
+        
+        // Game mode banner
+        g2d.setColor(new Color(0, 0, 0, 150));
+        g2d.fillRoundRect(getWidth()/2 - 100, 10, 200, 30, 15, 15);
+        
+        g2d.setColor(new Color(59, 130, 246));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRoundRect(getWidth()/2 - 100, 10, 200, 30, 15, 15);
+        
+        g2d.setFont(new Font("Arial", Font.BOLD, 14));
+        g2d.setColor(Color.WHITE);
+        String modeText = "TOWER BLOXX 2005 MODE";
+        FontMetrics fm = g2d.getFontMetrics();
+        int textWidth = fm.stringWidth(modeText);
+        g2d.drawString(modeText, (getWidth() - textWidth) / 2, 30);
+    }
+    
+    /**
+     * Gets movement pattern name for display
+     */
+    private String getMovementPatternName(int towerHeight) {
+        if (towerHeight <= 10) return "STEADY";
+        if (towerHeight <= 25) return "ACCELERATING";
+        if (towerHeight <= 50) return "ERRATIC";
+        if (towerHeight <= 75) return "PRECISION";
+        if (towerHeight <= 100) return "CHAOTIC";
+        return "EXTREME";
     }
     
 
@@ -439,6 +837,15 @@ public class GamePanel extends JPanel implements KeyListener {
                 }
                 break;
                 
+            case KeyEvent.VK_M:
+                // Open movement recorder (if available)
+                if (!gameOverShown && gameEngine != null) {
+                    gameEngine.pauseGame();
+                    // TODO: Implement movement recorder access
+                    System.out.println("Movement recorder access - to be implemented");
+                }
+                break;
+                
             case KeyEvent.VK_ESCAPE:
                 if (gameOverShown) {
                     // Reset game over state and return to menu
@@ -479,6 +886,19 @@ public class GamePanel extends JPanel implements KeyListener {
     }
     
     /**
+     * Calculates camera offset for effects rendering
+     */
+    private double calculateCameraOffset() {
+        if (gameEngine == null || gameEngine.getTower() == null) return 0;
+        
+        int towerHeight = gameEngine.getTower().getHeight();
+        if (towerHeight <= 7) return 0; // No camera movement for low towers
+        
+        // Simple camera calculation - move up as tower grows
+        return -(towerHeight - 7) * 35; // 35 pixels per floor above floor 7
+    }
+    
+    /**
      * Resets the panel for a new game
      */
     public void resetForNewGame() {
@@ -489,5 +909,9 @@ public class GamePanel extends JPanel implements KeyListener {
         showPauseOverlay = false;
         scoreEffects.clear();
         comboEffects.clear();
+        
+        if (professionalEffects != null) {
+            professionalEffects.clear();
+        }
     }
 }
