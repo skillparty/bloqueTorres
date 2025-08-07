@@ -473,13 +473,13 @@ public class ScorePanel extends JPanel implements KeyListener {
      * Draws a simple celebration effect
      */
     private void drawCelebrationEffect(Graphics2D g2d) {
-        long time = System.currentTimeMillis();
+        // CELEBRATION ESTÁTICA - Sin movimiento para EPILEPSY SAFETY
         
-        // Draw floating particles
+        // Draw STATIC particles in fixed positions
         for (int i = 0; i < 20; i++) {
-            double angle = (time / 1000.0 + i * 0.3) % (2 * Math.PI);
-            int x = (int) (getWidth() / 2 + Math.cos(angle) * (100 + i * 10));
-            int y = (int) (getHeight() / 2 + Math.sin(angle * 1.5) * (50 + i * 5));
+            // Fixed positions instead of animated
+            int x = (int) (getWidth() / 2 + (i * 30) % 200 - 100);
+            int y = (int) (getHeight() / 2 + (i * 20) % 100 - 50);
             
             // Vary colors
             Color[] colors = {Color.YELLOW, Color.ORANGE, Color.CYAN, Color.MAGENTA};

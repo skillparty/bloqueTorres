@@ -58,9 +58,7 @@ public class TowerVisualizationPanel extends JPanel {
     private static final Color BORDER_COLOR = new Color(59, 130, 246, 200);
     private static final Color TEXT_COLOR = new Color(248, 250, 252);
     
-    // Animaciones y efectos
-    private long animationTime = 0;
-    private long lastBlockTime = 0;
+    // Sistema ESTÁTICO sin animaciones - EPILEPSY SAFE
     private int lastBlockHeight = 0;
     private int currentViewOffset = 0;  // Para scroll automático
     private Random random = new Random();
@@ -109,19 +107,17 @@ public class TowerVisualizationPanel extends JPanel {
         
         initializeFonts();
         initializeParticles();
-        setupAnimationTimer();
+        // ELIMINADO: setupAnimationTimer() - NO MÁS ANIMACIONES
+        System.out.println("🎮 Torre de visualización creada - SIN ANIMACIONES PARA ACCESIBILIDAD");
     }
     
     /**
-     * Configura el timer para animaciones épicas
+     * ELIMINADO - Timer de animaciones removido para EPILEPSY SAFETY
      */
     private void setupAnimationTimer() {
-        Timer animationTimer = new Timer(33, e -> {  // 30 FPS para animaciones fluidas
-            animationTime = System.currentTimeMillis();
-            updateAnimations();
-            repaint();
-        });
-        animationTimer.start();
+        // SISTEMA COMPLETAMENTE ESTÁTICO - NO ANIMACIONES
+        // Mensaje informativo para desarrolladores
+        System.out.println("TOWER VISUALIZATION: Usando sistema estático sin animaciones (epilepsy-safe)");
     }
     
     private void initializeFonts() {
@@ -369,27 +365,21 @@ public class TowerVisualizationPanel extends JPanel {
     }
     
     /**
-     * Dibuja efectos especiales para el último bloque colocado
+     * Dibuja efectos ESTÁTICOS para el último bloque colocado - SIN PARPADEOS
      */
     private void drawLatestBlockEffects(Graphics2D g2d, int centerX, int segmentY, int segmentWidth, Color segmentColor) {
         // Detectar nuevo bloque
         int currentHeight = gameEngine.getTower().getHeight();
         if (currentHeight != lastBlockHeight) {
-            lastBlockTime = animationTime;
             lastBlockHeight = currentHeight;
         }
         
-        long elapsed = animationTime - lastBlockTime;
-        if (elapsed < 3000) { // 3 segundos de efectos
-            // Efecto de pulsación
-            double pulse = Math.sin(elapsed * 0.008) * 0.5 + 0.5;
-            int glowSize = (int)(pulse * 8) + 4;
-            
-            // Resplandor pulsante
-            g2d.setColor(new Color(segmentColor.getRed(), segmentColor.getGreen(), segmentColor.getBlue(), 
-                                 (int)(pulse * 150) + 50));
-            g2d.fillRoundRect(centerX - segmentWidth/2 - glowSize, segmentY - glowSize, 
-                            segmentWidth + glowSize * 2, SEGMENT_HEIGHT + glowSize * 2, 8, 8);
+        // Efecto ESTÁTICO (sin animación ni parpadeo)
+        if (currentHeight > 0) {
+            // Resplandor FIJO para el último bloque
+            g2d.setColor(new Color(segmentColor.getRed(), segmentColor.getGreen(), segmentColor.getBlue(), 100));
+            g2d.fillRoundRect(centerX - segmentWidth/2 - 4, segmentY - 4, 
+                            segmentWidth + 8, SEGMENT_HEIGHT + 8, 8, 8);
         }
     }
     
@@ -439,18 +429,185 @@ public class TowerVisualizationPanel extends JPanel {
     /**
      * Dibuja el indicador de altura actual
      */
+    /**
+     * Dibuja el indicador de altura actual CON EFECTOS CREATIVOS Y SEGURO PARA EPILEPSIA
+     */
     private void drawHeightIndicator(Graphics2D g2d, int towerHeight, int centerX, 
                                    int towerAreaTop, int towerAreaHeight) {
         if (towerHeight == 0) return;
         
-        // Calcular posición del indicador
+        // DIBUJAR TORRE PROGRESIVA - Cada piso se ilumina cuando se alcanza
+        drawProgressiveTower(g2d, towerHeight, centerX, towerAreaTop, towerAreaHeight);
+        
+        // EFECTO CREATIVO: Barras de progreso estáticas (sin parpadeo)
+        drawStaticProgressBars(g2d, towerHeight, centerX, towerAreaTop, towerAreaHeight);
+        
+        // EFECTO CREATIVO: Flecha con gradiente fijo (sin animación)
+        drawStaticArrow(g2d, towerHeight, centerX, towerAreaTop, towerAreaHeight);
+        
+        // EFECTO CREATIVO: Texto con sombra fija
+        drawStaticText(g2d, towerHeight, centerX, towerAreaTop, towerAreaHeight);
+    }
+    
+    /**
+     * Dibuja una torre que se ilumina progresivamente - SEGURO PARA EPILEPSIA
+     */
+    /**
+     * Dibuja torre progresiva usando colores REALES de los bloques - SIN PARPADEOS
+     * Sistema 100% ESTÁTICO para EPILEPSY SAFETY - no hay animaciones ni efectos temporales
+     */
+    private void drawProgressiveTower(Graphics2D g2d, int towerHeight, int centerX, 
+                                    int towerAreaTop, int towerAreaHeight) {
+        // Configuración de la torre lateral
+        int towerX = centerX - TOWER_BASE_WIDTH/2 - 120; // Posición a la izquierda
+        int towerBottomY = towerAreaTop + towerAreaHeight - 50;
+        int towerWidth = 40;
+        int maxVisibleFloors = 20; // Máximo 20 pisos visibles
+        int floorHeight = 15;
+        
+        // Base de la torre (siempre visible)
+        g2d.setColor(new Color(80, 80, 80)); // Gris oscuro para base
+        g2d.fillRect(towerX - 5, towerBottomY + 5, towerWidth + 10, 8);
+        
+        // Dibujar cada piso según la altura alcanzada
+        for (int floor = 1; floor <= Math.min(towerHeight, maxVisibleFloors); floor++) {
+            int floorY = towerBottomY - (floor * floorHeight);
+            
+            // Color del piso según la altura (iluminación estática)
+            Color floorColor = getFloorColor(floor, towerHeight);
+            
+            // Dibujar el piso
+            g2d.setColor(floorColor);
+            g2d.fillRect(towerX, floorY, towerWidth, floorHeight - 2);
+            
+            // Borde del piso
+            g2d.setColor(floorColor.brighter());
+            g2d.drawRect(towerX, floorY, towerWidth, floorHeight - 2);
+            
+            // Ventanas del piso (detalles fijos)
+            drawFloorWindows(g2d, towerX, floorY, towerWidth, floorHeight, floor);
+        }
+        
+        // Indicador de más pisos si la torre es muy alta
+        if (towerHeight > maxVisibleFloors) {
+            g2d.setColor(TEXT_COLOR);
+            g2d.setFont(statsFont);
+            g2d.drawString("+" + (towerHeight - maxVisibleFloors), towerX + 5, 
+                          towerBottomY - (maxVisibleFloors * floorHeight) - 10);
+        }
+    }
+    
+    /**
+     * Obtiene el color del piso basado en el color REAL del bloque colocado
+     */
+    private Color getFloorColor(int floor, int currentHeight) {
+        if (floor <= currentHeight) {
+            // Obtener el color del bloque real si existe
+            try {
+                if (gameEngine.getTower() != null && gameEngine.getTower().getBlocks().size() >= floor) {
+                    // Usar el color real del bloque (indexado desde 0)
+                    Color blockColor = gameEngine.getTower().getBlocks().get(floor - 1).getColor();
+                    // Hacer el color semi-transparente para el efecto visual
+                    return new Color(blockColor.getRed(), blockColor.getGreen(), 
+                                   blockColor.getBlue(), 200);
+                }
+            } catch (Exception e) {
+                // Si hay error, usar color por defecto
+            }
+            
+            // Colores por defecto si no se puede obtener el color del bloque
+            if (floor <= 5) return new Color(100, 200, 100, 200);      // Verde claro
+            if (floor <= 10) return new Color(100, 150, 200, 200);     // Azul suave
+            if (floor <= 15) return new Color(200, 150, 100, 200);     // Naranja suave
+            return new Color(200, 100, 150, 200);                      // Rosa suave
+        } else {
+            // Piso no alcanzado - gris oscuro
+            return new Color(60, 60, 60, 150);
+        }
+    }
+    
+    /**
+     * Dibuja ventanas en cada piso para dar detalle
+     */
+    private void drawFloorWindows(Graphics2D g2d, int floorX, int floorY, 
+                                 int floorWidth, int floorHeight, int floorNumber) {
+        // Color de ventanas (amarillo suave fijo)
+        g2d.setColor(new Color(255, 255, 180, 180));
+        
+        // 3 ventanas por piso
+        int windowWidth = 4;
+        int windowHeight = 6;
+        int windowSpacing = (floorWidth - (3 * windowWidth)) / 4;
+        
+        for (int window = 0; window < 3; window++) {
+            int windowX = floorX + windowSpacing + (window * (windowWidth + windowSpacing));
+            int windowY = floorY + 4;
+            g2d.fillRect(windowX, windowY, windowWidth, windowHeight);
+        }
+    }
+    
+    /**
+     * Dibuja barras de progreso ESTÁTICAS (sin animación)
+     */
+    private void drawStaticProgressBars(Graphics2D g2d, int towerHeight, int centerX, 
+                                       int towerAreaTop, int towerAreaHeight) {
+        // Barra de progreso principal FIJA
+        int barWidth = 60;
+        int barHeight = 8;
+        int barX = centerX + TOWER_BASE_WIDTH/2 + 20; // Al lado derecho
+        int barY = towerAreaTop + 50;
+        
+        // Fondo de la barra
+        g2d.setColor(new Color(30, 30, 30, 180));
+        g2d.fillRoundRect(barX, barY, barWidth, barHeight, 4, 4);
+        
+        // Progreso - diferente color según la altura (ESTÁTICO)
+        double progress = Math.min(1.0, towerHeight / 20.0);
+        int progressWidth = (int)(barWidth * progress);
+        
+        Color progressColor = getStaticProgressColor(towerHeight);
+        g2d.setColor(progressColor);
+        g2d.fillRoundRect(barX, barY, progressWidth, barHeight, 4, 4);
+        
+        // Borde fijo
+        g2d.setColor(new Color(255, 255, 255, 150));
+        g2d.drawRoundRect(barX, barY, barWidth, barHeight, 4, 4);
+        
+        // Texto de nivel
+        g2d.setFont(statsFont);
+        g2d.setColor(TEXT_COLOR);
+        String levelText = "Nivel " + (towerHeight / 5 + 1);
+        g2d.drawString(levelText, barX, barY - 5);
+    }
+    
+    /**
+     * Obtiene el color de progreso ESTÁTICO según la altura
+     */
+    private Color getStaticProgressColor(int height) {
+        if (height < 5) return new Color(100, 200, 100);      // Verde
+        if (height < 10) return new Color(100, 150, 200);     // Azul  
+        if (height < 15) return new Color(200, 150, 100);     // Naranja
+        if (height < 20) return new Color(200, 100, 150);     // Rosa
+        return new Color(150, 100, 200);                      // Púrpura
+    }
+    
+    /**
+     * Dibuja una flecha ESTÁTICA con gradiente fijo
+     */
+    private void drawStaticArrow(Graphics2D g2d, int towerHeight, int centerX, 
+                               int towerAreaTop, int towerAreaHeight) {
         int visibleHeight = Math.min(towerHeight, VISIBLE_SEGMENTS);
         int indicatorY = towerAreaTop + towerAreaHeight - 20 - ((visibleHeight - 1) * SEGMENT_HEIGHT);
         
-        // Flecha indicadora animada
-        double arrowPulse = Math.sin(animationTime * 0.005) * 0.3 + 0.7;
-        g2d.setColor(new Color(255, 215, 0, (int)(arrowPulse * 255)));
-        g2d.setStroke(new BasicStroke(2));
+        // Gradiente dorado FIJO (sin animación)
+        GradientPaint gradient = new GradientPaint(
+            centerX - TOWER_BASE_WIDTH/2 - 20, indicatorY,
+            new Color(255, 215, 0, 180),
+            centerX - TOWER_BASE_WIDTH/2 - 8, indicatorY,
+            new Color(255, 165, 0, 120)
+        );
+        g2d.setPaint(gradient);
+        g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         
         // Línea del indicador
         g2d.drawLine(centerX - TOWER_BASE_WIDTH/2 - 20, indicatorY + SEGMENT_HEIGHT/2, 
@@ -459,14 +616,28 @@ public class TowerVisualizationPanel extends JPanel {
         // Punta de flecha
         int[] xPoints = {centerX - TOWER_BASE_WIDTH/2 - 8, centerX - TOWER_BASE_WIDTH/2 - 12, 
                         centerX - TOWER_BASE_WIDTH/2 - 12};
-        int[] yPoints = {indicatorY + SEGMENT_HEIGHT/2, indicatorY + SEGMENT_HEIGHT/2 - 3, 
-                        indicatorY + SEGMENT_HEIGHT/2 + 3};
+        int[] yPoints = {indicatorY + SEGMENT_HEIGHT/2, indicatorY + SEGMENT_HEIGHT/2 - 4, 
+                        indicatorY + SEGMENT_HEIGHT/2 + 4};
         g2d.fillPolygon(xPoints, yPoints, 3);
+    }
+    
+    /**
+     * Dibuja texto ESTÁTICO con sombra fija
+     */
+    private void drawStaticText(Graphics2D g2d, int towerHeight, int centerX, 
+                              int towerAreaTop, int towerAreaHeight) {
+        int visibleHeight = Math.min(towerHeight, VISIBLE_SEGMENTS);
+        int indicatorY = towerAreaTop + towerAreaHeight - 20 - ((visibleHeight - 1) * SEGMENT_HEIGHT);
         
-        // Texto de altura
         g2d.setFont(statsFont);
+        String heightText = "Altura: " + towerHeight;
+        
+        // Sombra FIJA del texto
+        g2d.setColor(new Color(0, 0, 0, 120));
+        g2d.drawString(heightText, centerX - TOWER_BASE_WIDTH/2 - 44, indicatorY + SEGMENT_HEIGHT/2 + 4);
+        
+        // Texto principal
         g2d.setColor(TEXT_COLOR);
-        String heightText = "Nivel " + towerHeight;
         g2d.drawString(heightText, centerX - TOWER_BASE_WIDTH/2 - 45, indicatorY + SEGMENT_HEIGHT/2 + 3);
     }
     
@@ -492,17 +663,17 @@ public class TowerVisualizationPanel extends JPanel {
     }
     
     /**
-     * Efectos del espacio
+     * Efectos del espacio - COMPLETAMENTE ESTÁTICOS (seguro para epilepsia)
      */
     private void drawSpaceEffects(Graphics2D g2d) {
-        // Estrellas parpadeantes
+        // Estrellas COMPLETAMENTE ESTÁTICAS (sin parpadeo ni animación)
+        Random staticRandom = new Random(12345); // Seed fija para posiciones consistentes
         for (int i = 0; i < 15; i++) {
-            if (random.nextFloat() < 0.3f) {
-                int x = random.nextInt(getWidth());
-                int y = 60 + random.nextInt(200);
-                double twinkle = Math.sin(animationTime * 0.01 + i) * 0.5 + 0.5;
-                g2d.setColor(new Color(255, 255, 255, (int)(twinkle * 200) + 55));
-                g2d.fillOval(x, y, 1, 1);
+            if (staticRandom.nextFloat() < 0.3f) {
+                int x = staticRandom.nextInt(getWidth());
+                int y = 60 + staticRandom.nextInt(200);
+                g2d.setColor(new Color(255, 255, 255, 120)); // Color completamente fijo
+                g2d.fillOval(x, y, 2, 2); // Estrellas un poco más grandes para mejor visibilidad
             }
         }
     }
@@ -519,14 +690,13 @@ public class TowerVisualizationPanel extends JPanel {
     }
     
     /**
-     * Efectos de nubes
+     * Efectos de nubes ESTÁTICOS - Sin movimiento
      */
     private void drawCloudEffects(Graphics2D g2d) {
-        // Nubes flotantes
-        double cloudMove = Math.sin(animationTime * 0.002) * 10;
+        // Nubes FIJAS sin animación
         g2d.setColor(new Color(255, 255, 255, 80));
-        g2d.fillOval((int)(getWidth() * 0.7 + cloudMove), 100, 25, 15);
-        g2d.fillOval((int)(getWidth() * 0.2 - cloudMove), 150, 30, 18);
+        g2d.fillOval((int)(getWidth() * 0.7), 100, 25, 15);
+        g2d.fillOval((int)(getWidth() * 0.2), 150, 30, 18);
     }
     
     /**

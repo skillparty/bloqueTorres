@@ -20,16 +20,24 @@ public class BlockDropAnimation {
     private ShadowEffect shadowEffect;
     private SquashEffect squashEffect;
     
-    // Parámetros de animación
-    private static final double GRAVITY = 800.0; // pixels/s²
-    private static final double TERMINAL_VELOCITY = 600.0; // pixels/s
-    private static final double AIR_RESISTANCE = 0.02;
+    // Parámetros de animación MEJORADOS para mayor realismo
+    private static final double GRAVITY = 980.0; // pixels/s² - Gravedad más realista (9.8m/s²)
+    private static final double TERMINAL_VELOCITY = 700.0; // pixels/s - Velocidad terminal más alta
+    private static final double AIR_RESISTANCE = 0.015; // Resistencia del aire reducida
+    private static final double ROTATION_DAMPING = 0.98; // Amortiguación de rotación
+    private static final double WOBBLE_FREQUENCY = 8.0; // Frecuencia de oscilación
     
-    // Efectos de rebote y impacto
+    // Efectos de rebote y impacto MEJORADOS
     private boolean hasLanded;
     private double bounceVelocity;
     private int bounceCount;
-    private static final int MAX_BOUNCES = 2;
+    private static final int MAX_BOUNCES = 3; // Más rebotes para mayor realismo
+    private static final double BOUNCE_DAMPING = 0.6; // Pérdida de energía en rebotes
+    
+    // Efectos físicos adicionales
+    private double sidewaysDrift; // Deriva lateral por viento
+    private double wobblePhase; // Fase de oscilación
+    private double impactIntensity; // Intensidad del impacto
     
     // Efectos de partículas
     private ImpactParticleSystem impactParticles;
@@ -41,9 +49,14 @@ public class BlockDropAnimation {
         this.velocityY = 0;
         this.accelerationY = GRAVITY;
         this.rotation = 0;
-        this.rotationSpeed = (random.nextDouble() - 0.5) * 2.0; // Rotación aleatoria suave
+        this.rotationSpeed = (random.nextDouble() - 0.5) * 3.0; // Rotación más pronunciada
         this.hasLanded = false;
         this.bounceCount = 0;
+        
+        // Inicializar efectos físicos mejorados
+        this.sidewaysDrift = (random.nextDouble() - 0.5) * 50.0; // Deriva lateral
+        this.wobblePhase = random.nextDouble() * Math.PI * 2; // Fase aleatoria
+        this.impactIntensity = 0.0;
         
         // Inicializar efectos
         this.trailEffect = new TrailEffect();
@@ -57,25 +70,35 @@ public class BlockDropAnimation {
             return; // Animación terminada
         }
         
-        // Aplicar gravedad
+        // Aplicar gravedad con aceleración progresiva
         velocityY += accelerationY * deltaTime;
         
-        // Aplicar resistencia del aire
-        velocityY *= (1.0 - AIR_RESISTANCE);
+        // Aplicar resistencia del aire (más realista)
+        velocityY *= (1.0 - AIR_RESISTANCE * deltaTime * 60); // Ajustar por FPS
         
         // Limitar velocidad terminal
         if (velocityY > TERMINAL_VELOCITY) {
             velocityY = TERMINAL_VELOCITY;
         }
         
-        // Actualizar posición
+        // Actualizar posición con efectos físicos mejorados
         double oldY = block.getY();
+        double oldX = block.getX();
+        
+        // Posición vertical con caída
         block.setY(oldY + velocityY * deltaTime);
         
-        // Actualizar rotación
-        rotation += rotationSpeed * deltaTime;
+        // Deriva lateral y oscilación (wobble) para mayor realismo
+        wobblePhase += WOBBLE_FREQUENCY * deltaTime;
+        double wobbleOffset = Math.sin(wobblePhase) * (velocityY / TERMINAL_VELOCITY) * 8.0;
+        double driftOffset = sidewaysDrift * deltaTime * (velocityY / TERMINAL_VELOCITY);
+        block.setX(oldX + driftOffset + wobbleOffset);
         
-        // Actualizar efectos
+        // Actualizar rotación con amortiguación
+        rotation += rotationSpeed * deltaTime;
+        rotationSpeed *= Math.pow(ROTATION_DAMPING, deltaTime * 60); // Amortiguación progresiva
+        
+        // Actualizar efectos con nuevos parámetros
         trailEffect.update(deltaTime, block.getX() + block.getWidth()/2, 
                           block.getY() + block.getHeight()/2, velocityY);
         shadowEffect.update(deltaTime, block, velocityY);
@@ -84,6 +107,9 @@ public class BlockDropAnimation {
         if (hasLanded) {
             impactParticles.update(deltaTime);
         }
+        
+        // Actualizar intensidad del impacto
+        impactIntensity = Math.min(1.0, velocityY / TERMINAL_VELOCITY);
     }
     
     public void render(Graphics2D g2d, double cameraY) {
@@ -170,19 +196,29 @@ public class BlockDropAnimation {
         if (!hasLanded) {
             hasLanded = true;
             
-            // Calcular rebote basado en velocidad de impacto
-            bounceVelocity = -velocityY * 0.3; // 30% de la velocidad de impacto
+            // Calcular rebote mejorado basado en intensidad del impacto
+            double impactFactor = Math.min(1.0, velocityY / TERMINAL_VELOCITY);
+            bounceVelocity = -velocityY * BOUNCE_DAMPING * impactFactor;
             velocityY = bounceVelocity;
             
             // Ajustar posición al suelo
             block.setY(groundY - block.getHeight());
             
-            // Activar efectos de impacto
+            // Activar efectos de impacto con intensidad variable
             squashEffect.triggerImpact();
             impactParticles.triggerImpact(block.getX() + block.getWidth()/2, 
-                                        groundY, velocityY);
+                                        groundY, velocityY * impactFactor);
+            
+            // Reducir rotación en el impacto
+            rotationSpeed *= 0.5;
             
             bounceCount++;
+            
+            // Si es el último rebote, detener movimiento lateral
+            if (bounceCount >= MAX_BOUNCES) {
+                sidewaysDrift *= 0.1;
+                rotationSpeed *= 0.1;
+            }
         }
     }
     

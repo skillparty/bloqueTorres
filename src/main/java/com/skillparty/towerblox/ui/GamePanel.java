@@ -141,10 +141,9 @@ public class GamePanel extends JPanel implements KeyListener {
      * Sets up the rendering timer
      */
     private void setupTimer() {
-        Timer renderTimer = new Timer(16, e -> { // ~60 FPS
-            if (gameEngine != null) {
-                gameEngine.gameLoop(); // Update game logic
-            }
+        Timer renderTimer = new Timer(33, e -> { // ~30 FPS - Smoother, less flickering
+            // Game update and render cycle
+            gameEngine.gameLoop(); // Update game logic
             repaint(); // Render
             updateEffects();
             updatePerformanceStats();
@@ -254,7 +253,7 @@ public class GamePanel extends JPanel implements KeyListener {
         
         // Update professional effects
         if (professionalEffects != null) {
-            professionalEffects.update(16); // 16ms delta time for 60 FPS
+            professionalEffects.update(33); // 33ms delta time for 30 FPS - smoother effects
         }
     }
     
@@ -325,8 +324,8 @@ public class GamePanel extends JPanel implements KeyListener {
         // Crane status panel (top-right)
         renderCraneStatus(g2d);
         
-        // Tower progress indicator (right side)
-        renderTowerProgress(g2d);
+        // ELIMINADO: Torre lateral derecha con luces parpadeantes
+        // Ahora se usa sistema unificado sin parpadeos en TowerVisualizationPanel
         
         // Performance indicators (bottom-left)
         renderPerformanceInfo(g2d);
@@ -433,8 +432,9 @@ public class GamePanel extends JPanel implements KeyListener {
         if (gameEngine != null) {
             g2d.setFont(new Font("Arial", Font.PLAIN, 10));
             g2d.setColor(Color.LIGHT_GRAY);
-            String difficulty = gameEngine.getCurrentDifficulty().getDisplayName();
-            g2d.drawString("Difficulty: " + difficulty, 20, 140);
+            // String difficulty = gameEngine.getCurrentDifficulty().getDisplayName();
+            // g2d.drawString("Difficulty: " + difficulty, 20, 140);
+            g2d.drawString("Tower Bloxx - Enhanced", 20, 140);
         }
     }
     
@@ -554,60 +554,12 @@ public class GamePanel extends JPanel implements KeyListener {
         g2d.setColor(Color.YELLOW);
         g2d.fillRect(barX + currentPos - 1, barY - 2, 2, 10);
     }
-    
+
     /**
-     * Renders tower progress visualization
+     * ELIMINADO: renderTowerProgress - Reemplazado por sistema unificado sin parpadeos
+     * El TowerVisualizationPanel ahora maneja toda la visualización de torre de forma segura
      */
-    private void renderTowerProgress(Graphics2D g2d) {
-        if (gameEngine == null || gameEngine.getTower() == null) return;
-        
-        int panelX = getWidth() - 80;
-        int panelY = 150;
-        int panelWidth = 70;
-        int panelHeight = 300;
-        
-        // Background
-        g2d.setColor(new Color(0, 0, 0, 150));
-        g2d.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 10, 10);
-        
-        // Border
-        g2d.setColor(new Color(99, 102, 241));
-        g2d.setStroke(new BasicStroke(1));
-        g2d.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 10, 10);
-        
-        // Title
-        g2d.setFont(new Font("Arial", Font.BOLD, 10));
-        g2d.setColor(Color.WHITE);
-        g2d.drawString("TOWER", panelX + 15, panelY - 5);
-        
-        // Tower visualization (last 20 blocks)
-        Tower tower = gameEngine.getTower();
-        int towerHeight = tower.getHeight();
-        int startBlock = Math.max(0, towerHeight - 20);
-        
-        for (int i = startBlock; i < towerHeight; i++) {
-            int blockY = panelY + panelHeight - ((i - startBlock + 1) * (panelHeight / 20));
-            
-            // Block color based on stability
-            if (i < tower.getBlocks().size()) {
-                Block block = tower.getBlocks().get(i);
-                double stability = block.getStability();
-                Color blockColor;
-                if (stability >= 0.9) blockColor = Color.GREEN;
-                else if (stability >= 0.7) blockColor = Color.YELLOW;
-                else if (stability >= 0.5) blockColor = Color.ORANGE;
-                else blockColor = Color.RED;
-                
-                g2d.setColor(blockColor);
-                g2d.fillRect(panelX + 10, blockY, panelWidth - 20, panelHeight / 20 - 1);
-            }
-        }
-        
-        // Crane position indicator
-        g2d.setColor(Color.CYAN);
-        g2d.fillRect(panelX + 5, panelY - 10, panelWidth - 10, 3);
-    }
-    
+
     /**
      * Renders performance information
      */

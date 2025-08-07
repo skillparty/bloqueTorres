@@ -5,10 +5,10 @@ package com.skillparty.towerblox.utils;
  */
 public final class Constants {
     
-    // Game dimensions
-    public static final int GAME_WIDTH = 800;
-    public static final int GAME_HEIGHT = 600;
-    public static final int GROUND_LEVEL = GAME_HEIGHT - 50;
+    // Game dimensions - IMPROVED RESOLUTION FOR BETTER EXPERIENCE
+    public static final int GAME_WIDTH = 1200;
+    public static final int GAME_HEIGHT = 800;
+    public static final int GROUND_LEVEL = GAME_HEIGHT - 80;
     
     // Performance settings
     public static final int TARGET_FPS = 60;

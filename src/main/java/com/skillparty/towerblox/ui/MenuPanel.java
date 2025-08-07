@@ -70,7 +70,7 @@ public class MenuPanel extends JPanel implements KeyListener {
 
     private void initializePanel() {
         setBackground(Color.BLACK);
-        setPreferredSize(new Dimension(800, 600));
+        setPreferredSize(new Dimension(1200, 800)); // Updated for new resolution
         setDoubleBuffered(true);
     }
     
@@ -82,10 +82,10 @@ public class MenuPanel extends JPanel implements KeyListener {
         int blockHeight = 55;
         int spacing = 25;
         
-        // First row - Difficulty buttons positioned below ASCII logo
-        int startY = 320; // Positioned below the ASCII logo
+        // First row - Difficulty buttons positioned below ASCII logo (centered for 1200x800)
+        int startY = 420; // Positioned lower for bigger screen
         int totalWidth = 3 * blockWidth + 2 * spacing;
-        int startX = (800 - totalWidth) / 2;
+        int startX = (1200 - totalWidth) / 2; // Center in 1200px width
         
         for (int i = 0; i < 3; i++) {
             buttonBounds[i] = new Rectangle(startX + i * (blockWidth + spacing), startY, blockWidth, blockHeight);
@@ -94,7 +94,7 @@ public class MenuPanel extends JPanel implements KeyListener {
         // Second row - Special buttons stacked below
         int secondRowY = startY + blockHeight + 20;
         int secondRowWidth = 3 * blockWidth + 2 * spacing;
-        int secondRowX = (800 - secondRowWidth) / 2;
+        int secondRowX = (1200 - secondRowWidth) / 2; // Center in 1200px width
         
         buttonBounds[3] = new Rectangle(secondRowX, secondRowY, blockWidth, blockHeight);
         buttonBounds[4] = new Rectangle(secondRowX + blockWidth + spacing, secondRowY, blockWidth, blockHeight);
