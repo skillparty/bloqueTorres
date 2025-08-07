@@ -91,7 +91,7 @@ public class TowerBloxxGame extends JPanel implements KeyListener {
         craneSystem.setMovementPattern(CraneSystem.MovementPattern.PENDULUM);
         
         // Initialize background
-        background = new CityBackground();
+        background = new CityBackground(1280, 720, 600);
         
         // Initialize game state
         blocks = new ArrayList<>();
@@ -201,7 +201,7 @@ public class TowerBloxxGame extends JPanel implements KeyListener {
         }
         
         // Update background
-        background.update((long)(deltaTime * 1000));
+        background.update();
         
         // Update camera to follow tower
         updateCamera();

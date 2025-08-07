@@ -77,7 +77,7 @@ public class MainIntegrated {
         clearConsole();
         
         System.out.println("\n");
-        ASCIILogo.displayLogo();
+        new ASCIILogo().displayLogo();
         System.out.println("\n");
         
         String version = USE_REFACTORED ? "REFACTORED 2.0" : "LEGACY";

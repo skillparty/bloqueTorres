@@ -230,4 +230,11 @@ public class ASCIILogo {
         System.out.println("    " + DEV_TEXT);
         System.out.println();
     }
+    
+    /**
+     * Displays the logo to console (alias for printToConsole)
+     */
+    public void displayLogo() {
+        printToConsole();
+    }
 }

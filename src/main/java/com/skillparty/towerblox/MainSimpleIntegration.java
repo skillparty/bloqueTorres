@@ -38,7 +38,7 @@ public class MainSimpleIntegration {
         clearConsole();
         
         System.out.println("\n");
-        ASCIILogo.displayLogo();
+        new ASCIILogo().displayLogo();
         System.out.println("\n");
         
         System.out.println("🎮 javaBloxx 2.0 - Professional Refactor");

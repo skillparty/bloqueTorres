@@ -104,7 +104,7 @@ public class GameEngine implements KeyListener {
         this.crane = new Crane(GAME_WIDTH / 2, 50, GAME_WIDTH);
         this.currentDifficulty = DifficultyLevel.NORMAL;
         this.scoreManager = new ScoreManager(currentDifficulty);
-        this.cityBackground = new CityBackground();
+        this.cityBackground = new CityBackground(GAME_WIDTH, GAME_HEIGHT, GROUND_LEVEL);
         this.advancedFeatures = new AdvancedFeaturesManager();
         this.soundManager = new SoundManager();
         this.movementRecorder = new MovementRecorder();
@@ -242,7 +242,7 @@ public class GameEngine implements KeyListener {
         
         // Update professional city background
         if (cityBackground != null) {
-            cityBackground.update(deltaTime);
+            cityBackground.update();
         }
         
         // Update advanced features (particle effects, etc.)
