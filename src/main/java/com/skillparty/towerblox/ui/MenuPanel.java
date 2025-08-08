@@ -39,10 +39,10 @@ public class MenuPanel extends JPanel implements KeyListener {
     private static final Color OVERLAY = new Color(0, 0, 0, 35);              // Subtle overlay
     
     // Simple button system
-    private int selectedButton = 1; // 0=Easy, 1=Normal, 2=Hard, 3=Movements, 4=HighScores, 5=Exit
+    private int selectedButton = 1; // 0=Easy, 1=Normal, 2=Hard, 3=Professional, 4=Movements, 5=HighScores, 6=Exit
     private Rectangle[] buttonBounds;
-    private String[] buttonTexts = {"FÁCIL", "NORMAL", "DIFÍCIL", "MOVIMIENTOS", "PUNTUACIONES", "SALIR"};
-    private DifficultyLevel[] difficulties = {DifficultyLevel.EASY, DifficultyLevel.NORMAL, DifficultyLevel.HARD, null, null, null};
+    private String[] buttonTexts = {"FÁCIL", "NORMAL", "DIFÍCIL", "PROFESIONAL", "MOVIMIENTOS", "PUNTUACIONES", "SALIR"};
+    private DifficultyLevel[] difficulties = {DifficultyLevel.EASY, DifficultyLevel.NORMAL, DifficultyLevel.HARD, DifficultyLevel.PROFESSIONAL, null, null, null};
 
     public MenuPanel(GameWindow parentWindow) {
         this.parentWindow = parentWindow;
@@ -52,7 +52,6 @@ public class MenuPanel extends JPanel implements KeyListener {
         loadBackgroundImage();
         initializePanel();
         createButtons();
-        setupEventHandlers();
         
         setFocusable(true);
         addKeyListener(this);
@@ -75,57 +74,67 @@ public class MenuPanel extends JPanel implements KeyListener {
     }
     
     private void createButtons() {
-        buttonBounds = new Rectangle[6];
+        buttonBounds = new Rectangle[7]; // Actualizado a 7 botones
         
         // Block-style buttons positioned to work with background image
         int blockWidth = 150;
-        int blockHeight = 55;
-        int spacing = 25;
+        int blockHeight = 50;
+        int spacing = 20;
         
-        // First row - Difficulty buttons positioned below ASCII logo (centered for 1200x800)
-        int startY = 420; // Positioned lower for bigger screen
-        int totalWidth = 3 * blockWidth + 2 * spacing;
-        int startX = (1200 - totalWidth) / 2; // Center in 1200px width
-        
-        for (int i = 0; i < 3; i++) {
-            buttonBounds[i] = new Rectangle(startX + i * (blockWidth + spacing), startY, blockWidth, blockHeight);
+        // Calculate positions for a 4-button row and a 3-button row
+        int firstRowX = (1280 - (4 * blockWidth + 3 * spacing)) / 2; // Center the 4 buttons
+        int startY = 320; // Position below the title
+
+        // First row: 4 difficulty buttons
+        for (int i = 0; i < 4; i++) {
+            buttonBounds[i] = new Rectangle(firstRowX + i * (blockWidth + spacing), startY, blockWidth, blockHeight);
+            System.out.println("🔲 Button " + i + " (" + buttonTexts[i] + ") bounds: " + buttonBounds[i]);
         }
+
+        // Second row: 3 action buttons (centered)
+        int secondRowY = startY + blockHeight + 30; // Position below first row
+        int secondRowX = (1280 - (3 * blockWidth + 2 * spacing)) / 2; // Center the 3 buttons
         
-        // Second row - Special buttons stacked below
-        int secondRowY = startY + blockHeight + 20;
-        int secondRowWidth = 3 * blockWidth + 2 * spacing;
-        int secondRowX = (1200 - secondRowWidth) / 2; // Center in 1200px width
+        buttonBounds[4] = new Rectangle(secondRowX, secondRowY, blockWidth, blockHeight);
+        buttonBounds[5] = new Rectangle(secondRowX + blockWidth + spacing, secondRowY, blockWidth, blockHeight);
+        buttonBounds[6] = new Rectangle(secondRowX + 2 * (blockWidth + spacing), secondRowY, blockWidth, blockHeight);
         
-        buttonBounds[3] = new Rectangle(secondRowX, secondRowY, blockWidth, blockHeight);
-        buttonBounds[4] = new Rectangle(secondRowX + blockWidth + spacing, secondRowY, blockWidth, blockHeight);
-        buttonBounds[5] = new Rectangle(secondRowX + 2 * (blockWidth + spacing), secondRowY, blockWidth, blockHeight);
+        System.out.println("🔲 Button 4 (" + buttonTexts[4] + ") bounds: " + buttonBounds[4]);
+        System.out.println("🔲 Button 5 (" + buttonTexts[5] + ") bounds: " + buttonBounds[5]);
+        System.out.println("🔲 Button 6 (" + buttonTexts[6] + ") bounds: " + buttonBounds[6]);
+        
+        setupEventHandlers();
     }
 
     private void setupEventHandlers() {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                System.out.println("🖱️ Mouse clicked at: (" + e.getX() + ", " + e.getY() + ")");
                 for (int i = 0; i < buttonBounds.length; i++) {
-                    if (buttonBounds[i].contains(e.getPoint())) {
+                    if (buttonBounds[i] != null && buttonBounds[i].contains(e.getPoint())) {
+                        System.out.println("🎯 Button " + i + " (" + buttonTexts[i] + ") clicked!");
                         activateButton(i);
                         break;
                     }
                 }
+                System.out.println("📊 Button bounds check completed");
             }
         });
     }
     
     private void activateButton(int index) {
-        if (index < 3) {
-            // Difficulty buttons
+        System.out.println("🚀 Activating button " + index + ": " + buttonTexts[index]);
+        if (index < 4) {
+            // Botones de dificultad (0=Fácil, 1=Normal, 2=Difícil, 3=Profesional)
             startGame(difficulties[index]);
-        } else if (index == 3) {
+        } else if (index == 4) {
             // Movements
             parentWindow.showMovements();
-        } else if (index == 4) {
+        } else if (index == 5) {
             // High scores
             parentWindow.showHighScores();
-        } else if (index == 5) {
+        } else if (index == 6) {
             // Exit
             parentWindow.exitGame();
         }
@@ -133,6 +142,7 @@ public class MenuPanel extends JPanel implements KeyListener {
     
     private void startGame(DifficultyLevel difficulty) {
         System.out.println("Starting game with difficulty: " + difficulty.getDisplayName());
+        System.out.println("🎮 ¡JUEGO INICIADO! Usa la tecla ESC durante el juego para volver al menú.");
         parentWindow.startNewGame(difficulty);
     }
 
@@ -153,13 +163,13 @@ public class MenuPanel extends JPanel implements KeyListener {
                 break;
                 
             case KeyEvent.VK_UP:
-                if (selectedButton > 2) {
+                if (selectedButton > 3) {
                     selectedButton = Math.max(0, selectedButton - 3);
                 }
                 break;
                 
             case KeyEvent.VK_DOWN:
-                if (selectedButton < 3) {
+                if (selectedButton < 4) {
                     selectedButton = Math.min(buttonTexts.length - 1, selectedButton + 3);
                 }
                 break;
@@ -183,6 +193,10 @@ public class MenuPanel extends JPanel implements KeyListener {
                 
             case KeyEvent.VK_3:
                 startGame(DifficultyLevel.HARD);
+                break;
+                
+            case KeyEvent.VK_4:
+                startGame(DifficultyLevel.PROFESSIONAL);
                 break;
         }
         

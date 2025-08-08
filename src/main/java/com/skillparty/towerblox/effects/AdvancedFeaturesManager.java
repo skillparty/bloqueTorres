@@ -311,6 +311,20 @@ public class AdvancedFeaturesManager {
         System.out.println("🏙️ MID-RISE TRANSITION - Above street level!");
     }
     
+    /**
+     * Enable/disable professional mode features
+     */
+    public void enableProfessionalMode(boolean enabled) {
+        if (enabled) {
+            System.out.println("🏆 Advanced Features Manager: Professional mode ENABLED");
+            System.out.println("✨ Enhanced particle effects active");
+            System.out.println("🎨 Professional visual enhancements active");
+            this.enabled = true;
+        } else {
+            System.out.println("📦 Professional mode DISABLED - Standard mode");
+        }
+    }
+    
     // Getters for subsystems
     public ParticleSystem getParticleSystem() {
         return particleSystem;

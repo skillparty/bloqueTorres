@@ -265,6 +265,23 @@ public class PhysicsTuning {
         public static final double PERFECT_THRESHOLD_MULTIPLIER = 0.3;
     }
     
+    /**
+     * Difficulty scaling for PROFESSIONAL mode
+     * Enhanced experience with advanced camera and physics
+     */
+    public static class Professional {
+        public static final double GRAVITY_MULTIPLIER = 1.5;
+        public static final double CRANE_SPEED_MULTIPLIER = 1.5;
+        public static final double STABILITY_MULTIPLIER = 0.8;
+        public static final double PERFECT_THRESHOLD_MULTIPLIER = 0.8;
+        
+        // Professional-specific features
+        public static final boolean ENHANCED_CAMERA = true;
+        public static final boolean ADVANCED_CRANE_PHYSICS = true;
+        public static final boolean PROFESSIONAL_UI = true;
+        public static final double CAMERA_SHAKE_MULTIPLIER = 1.5;
+    }
+    
     // ============================================
     // DEBUG & TESTING
     // ============================================

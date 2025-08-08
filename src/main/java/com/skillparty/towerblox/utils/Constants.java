@@ -50,10 +50,12 @@ public final class Constants {
     public static final double EASY_SPEED_MULTIPLIER = 0.7;
     public static final double NORMAL_SPEED_MULTIPLIER = 1.0;
     public static final double HARD_SPEED_MULTIPLIER = 1.3;
+    public static final double PROFESSIONAL_SPEED_MULTIPLIER = 1.5;
     
     public static final double EASY_SCORE_MULTIPLIER = 1.0;
     public static final double NORMAL_SCORE_MULTIPLIER = 1.5;
     public static final double HARD_SCORE_MULTIPLIER = 2.0;
+    public static final double PROFESSIONAL_SCORE_MULTIPLIER = 3.0;
     
     // UI Constants
     public static final int MAX_HIGH_SCORES = 10;
@@ -101,6 +103,8 @@ public final class Constants {
                 return NORMAL_SPEED_MULTIPLIER;
             case "HARD":
                 return HARD_SPEED_MULTIPLIER;
+            case "PROFESSIONAL":
+                return PROFESSIONAL_SPEED_MULTIPLIER;
             default:
                 return NORMAL_SPEED_MULTIPLIER;
         }
@@ -117,6 +121,8 @@ public final class Constants {
                 return NORMAL_SCORE_MULTIPLIER;
             case "HARD":
                 return HARD_SCORE_MULTIPLIER;
+            case "PROFESSIONAL":
+                return PROFESSIONAL_SCORE_MULTIPLIER;
             default:
                 return NORMAL_SCORE_MULTIPLIER;
         }

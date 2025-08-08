@@ -95,7 +95,7 @@ public class TowerBloxxGame extends JPanel implements KeyListener {
         
         // Initialize game state
         blocks = new ArrayList<>();
-        currentState = GameState.MENU;
+        currentState = GameState.MENU; // Start in menu state
         difficulty = DifficultyLevel.NORMAL;
         score = 0;
         towerHeight = 0;
@@ -114,10 +114,28 @@ public class TowerBloxxGame extends JPanel implements KeyListener {
     }
     
     /**
-     * Starts the game
+     * Starts the game - but only start the loop, not gameplay
      */
     public void startGame() {
+        // Just start the game loop for menu display
+        // Don't change state to PLAYING until user selects difficulty
+        gameLoop.start();
+        
+        System.out.println("🎮 javaBloxx 2.0 Started - Professional Refactor Complete!");
+    }
+    
+    /**
+     * Starts actual gameplay with specified difficulty
+     */
+    public void startNewGame(DifficultyLevel difficulty) {
+        this.difficulty = difficulty;
         currentState = GameState.PLAYING;
+        
+        // Reset game state
+        blocks.clear();
+        score = 0;
+        towerHeight = 0;
+        towerStability = 100.0;
         
         // Create foundation
         createFoundation();
@@ -125,10 +143,7 @@ public class TowerBloxxGame extends JPanel implements KeyListener {
         // Spawn first block
         spawnNewBlock();
         
-        // Start game loop
-        gameLoop.start();
-        
-        System.out.println("🎮 javaBloxx 2.0 Started - Professional Refactor Complete!");
+        System.out.println("🎮 Starting game with difficulty: " + difficulty);
     }
     
     /**

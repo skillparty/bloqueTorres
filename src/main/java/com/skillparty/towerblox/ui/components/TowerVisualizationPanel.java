@@ -454,75 +454,169 @@ public class TowerVisualizationPanel extends JPanel {
      */
     /**
      * Dibuja torre progresiva usando colores REALES de los bloques - SIN PARPADEOS
-     * Sistema 100% ESTÁTICO para EPILEPSY SAFETY - no hay animaciones ni efectos temporales
+     * Sistema 100% ESTÁTICO para EPILEPSY SAFETY con diseño PROFESIONAL
      */
     private void drawProgressiveTower(Graphics2D g2d, int towerHeight, int centerX, 
                                     int towerAreaTop, int towerAreaHeight) {
-        // Configuración de la torre lateral
-        int towerX = centerX - TOWER_BASE_WIDTH/2 - 120; // Posición a la izquierda
-        int towerBottomY = towerAreaTop + towerAreaHeight - 50;
-        int towerWidth = 40;
+        // Configuración de la torre lateral con diseño moderno
+        int towerX = centerX - TOWER_BASE_WIDTH/2 - 140; // Más espacio para mejor diseño
+        int towerBottomY = towerAreaTop + towerAreaHeight - 60;
+        int towerWidth = 50;  // Más ancho para mejor apariencia
         int maxVisibleFloors = 20; // Máximo 20 pisos visibles
-        int floorHeight = 15;
+        int floorHeight = 16; // Más alto para mejor proporción
         
-        // Base de la torre (siempre visible)
-        g2d.setColor(new Color(80, 80, 80)); // Gris oscuro para base
-        g2d.fillRect(towerX - 5, towerBottomY + 5, towerWidth + 10, 8);
+        // Fondo de la torre con efecto de profundidad
+        g2d.setColor(new Color(17, 24, 39, 200));
+        g2d.fillRoundRect(towerX - 8, towerBottomY - (maxVisibleFloors * floorHeight) - 20, 
+                         towerWidth + 16, (maxVisibleFloors * floorHeight) + 30, 12, 12);
         
-        // Dibujar cada piso según la altura alcanzada
+        // Base de la torre profesional
+        GradientPaint baseGradient = new GradientPaint(
+            towerX, towerBottomY + 5, new Color(107, 114, 128),
+            towerX, towerBottomY + 15, new Color(55, 65, 81)
+        );
+        g2d.setPaint(baseGradient);
+        g2d.fillRoundRect(towerX - 10, towerBottomY + 5, towerWidth + 20, 12, 6, 6);
+        
+        // Dibujar cada piso con efecto 3D profesional
         for (int floor = 1; floor <= Math.min(towerHeight, maxVisibleFloors); floor++) {
             int floorY = towerBottomY - (floor * floorHeight);
             
-            // Color del piso según la altura (iluminación estática)
-            Color floorColor = getFloorColor(floor, towerHeight);
+            // Color del piso según el bloque real (epilepsy-safe)
+            Color floorColor = getEnhancedFloorColor(floor, towerHeight);
             
-            // Dibujar el piso
-            g2d.setColor(floorColor);
-            g2d.fillRect(towerX, floorY, towerWidth, floorHeight - 2);
-            
-            // Borde del piso
-            g2d.setColor(floorColor.brighter());
-            g2d.drawRect(towerX, floorY, towerWidth, floorHeight - 2);
-            
-            // Ventanas del piso (detalles fijos)
-            drawFloorWindows(g2d, towerX, floorY, towerWidth, floorHeight, floor);
+            // Efecto 3D para cada piso
+            drawProfessionalFloor(g2d, towerX, floorY, towerWidth, floorHeight, floorColor, floor);
         }
         
-        // Indicador de más pisos si la torre es muy alta
+        // Indicador de pisos adicionales con diseño mejorado
         if (towerHeight > maxVisibleFloors) {
-            g2d.setColor(TEXT_COLOR);
-            g2d.setFont(statsFont);
-            g2d.drawString("+" + (towerHeight - maxVisibleFloors), towerX + 5, 
-                          towerBottomY - (maxVisibleFloors * floorHeight) - 10);
+            // Fondo para el indicador
+            g2d.setColor(new Color(30, 41, 59, 200));
+            g2d.fillRoundRect(towerX - 5, towerBottomY - (maxVisibleFloors * floorHeight) - 35, 
+                             towerWidth + 10, 20, 8, 8);
+            
+            g2d.setColor(new Color(248, 250, 252));
+            g2d.setFont(new Font("SF Pro Display", Font.BOLD, 11));
+            String additionalText = "+" + (towerHeight - maxVisibleFloors) + " floors";
+            FontMetrics fm = g2d.getFontMetrics();
+            int textX = towerX + (towerWidth - fm.stringWidth(additionalText)) / 2;
+            g2d.drawString(additionalText, textX, towerBottomY - (maxVisibleFloors * floorHeight) - 20);
+        }
+        
+        // Título de la torre
+        g2d.setColor(new Color(156, 163, 175));
+        g2d.setFont(new Font("SF Pro Display", Font.BOLD, 12));
+        String title = "TOWER PREVIEW";
+        FontMetrics titleFm = g2d.getFontMetrics();
+        int titleX = towerX + (towerWidth - titleFm.stringWidth(title)) / 2;
+        g2d.drawString(title, titleX, towerAreaTop + 20);
+    }
+    
+    /**
+     * Dibuja un piso con efecto 3D profesional
+     */
+    private void drawProfessionalFloor(Graphics2D g2d, int x, int y, int width, int height, Color baseColor, int floor) {
+        // Fondo del piso con gradiente
+        GradientPaint floorGradient = new GradientPaint(
+            x, y, baseColor,
+            x, y + height, baseColor.darker()
+        );
+        g2d.setPaint(floorGradient);
+        g2d.fillRoundRect(x, y, width, height - 1, 4, 4);
+        
+        // Highlight superior para efecto 3D
+        g2d.setColor(new Color(
+            Math.min(255, baseColor.getRed() + 40),
+            Math.min(255, baseColor.getGreen() + 40),
+            Math.min(255, baseColor.getBlue() + 40),
+            180
+        ));
+        g2d.fillRoundRect(x + 1, y + 1, width - 2, 3, 2, 2);
+        
+        // Borde del piso
+        g2d.setColor(baseColor.brighter());
+        g2d.setStroke(new BasicStroke(1));
+        g2d.drawRoundRect(x, y, width, height - 1, 4, 4);
+        
+        // Ventanas profesionales
+        drawProfessionalWindows(g2d, x, y, width, height, floor);
+        
+        // Número del piso (solo para pisos altos)
+        if (floor % 5 == 0) {
+            g2d.setColor(new Color(255, 255, 255, 150));
+            g2d.setFont(new Font("SF Pro Display", Font.PLAIN, 8));
+            String floorNum = String.valueOf(floor);
+            FontMetrics fm = g2d.getFontMetrics();
+            int numX = x + width - fm.stringWidth(floorNum) - 2;
+            g2d.drawString(floorNum, numX, y + height - 2);
         }
     }
     
     /**
-     * Obtiene el color del piso basado en el color REAL del bloque colocado
+     * Ventanas profesionales con mejor diseño
      */
-    private Color getFloorColor(int floor, int currentHeight) {
+    private void drawProfessionalWindows(Graphics2D g2d, int floorX, int floorY, int floorWidth, int floorHeight, int floorNumber) {
+        // Color de ventanas más realista
+        Color windowColor = new Color(255, 248, 180, 200); // Luz cálida
+        g2d.setColor(windowColor);
+        
+        // 4 ventanas por piso con mejor distribución
+        int windowWidth = 6;
+        int windowHeight = 4;
+        int spacing = (floorWidth - (4 * windowWidth)) / 5;
+        
+        for (int i = 0; i < 4; i++) {
+            int windowX = floorX + spacing + i * (windowWidth + spacing);
+            int windowY = floorY + (floorHeight - windowHeight) / 2;
+            
+            // Ventana con efecto de luz
+            g2d.fillRoundRect(windowX, windowY, windowWidth, windowHeight, 2, 2);
+            
+            // Brillo de ventana
+            g2d.setColor(new Color(255, 255, 255, 120));
+            g2d.fillRoundRect(windowX + 1, windowY, windowWidth - 2, 1, 1, 1);
+            
+            // Restaurar color para próxima ventana
+            g2d.setColor(windowColor);
+        }
+    }
+    
+    /**
+     * Obtiene el color del piso basado en el color REAL del bloque colocado - VERSIÓN PROFESIONAL
+     */
+    private Color getEnhancedFloorColor(int floor, int currentHeight) {
         if (floor <= currentHeight) {
             // Obtener el color del bloque real si existe
             try {
                 if (gameEngine.getTower() != null && gameEngine.getTower().getBlocks().size() >= floor) {
                     // Usar el color real del bloque (indexado desde 0)
                     Color blockColor = gameEngine.getTower().getBlocks().get(floor - 1).getColor();
-                    // Hacer el color semi-transparente para el efecto visual
-                    return new Color(blockColor.getRed(), blockColor.getGreen(), 
-                                   blockColor.getBlue(), 200);
+                    
+                    // Mejorar el color con saturación y brillo profesional
+                    float[] hsb = Color.RGBtoHSB(blockColor.getRed(), blockColor.getGreen(), blockColor.getBlue(), null);
+                    // Aumentar ligeramente saturación y brillo para mejor apariencia
+                    hsb[1] = Math.min(1.0f, hsb[1] * 1.2f); // Saturación
+                    hsb[2] = Math.min(1.0f, hsb[2] * 1.1f); // Brillo
+                    
+                    Color enhancedColor = Color.getHSBColor(hsb[0], hsb[1], hsb[2]);
+                    return new Color(enhancedColor.getRed(), enhancedColor.getGreen(), 
+                                   enhancedColor.getBlue(), 220); // Mayor opacidad
                 }
             } catch (Exception e) {
                 // Si hay error, usar color por defecto
+                System.err.println("Error obtaining block color for floor " + floor + ": " + e.getMessage());
             }
             
-            // Colores por defecto si no se puede obtener el color del bloque
-            if (floor <= 5) return new Color(100, 200, 100, 200);      // Verde claro
-            if (floor <= 10) return new Color(100, 150, 200, 200);     // Azul suave
-            if (floor <= 15) return new Color(200, 150, 100, 200);     // Naranja suave
-            return new Color(200, 100, 150, 200);                      // Rosa suave
+            // Paleta de colores profesional por defecto
+            if (floor <= 5) return new Color(52, 211, 153, 220);      // Emerald - Fundación
+            if (floor <= 10) return new Color(59, 130, 246, 220);     // Blue - Construcción
+            if (floor <= 15) return new Color(245, 158, 11, 220);     // Amber - Crecimiento  
+            if (floor <= 20) return new Color(168, 85, 247, 220);     // Purple - Altura
+            return new Color(236, 72, 153, 220);                      // Pink - Cielo
         } else {
-            // Piso no alcanzado - gris oscuro
-            return new Color(60, 60, 60, 150);
+            // Piso no alcanzado - gris profesional
+            return new Color(75, 85, 99, 120);
         }
     }
     

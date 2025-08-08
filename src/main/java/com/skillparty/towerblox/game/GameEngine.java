@@ -133,7 +133,7 @@ public class GameEngine implements KeyListener {
      * Resets the game state for a new game
      */
     private void resetGameState() {
-        blockDropped = false;
+        blockDropped = false; // Ensure we start with ability to create blocks
         gameOverTriggered = false;
         gameOverReason = "";
         frameCount = 0;
@@ -169,6 +169,22 @@ public class GameEngine implements KeyListener {
         // Apply difficulty settings
         if (crane != null) {
             crane.setSpeed(crane.getBaseSpeed() * difficulty.getSpeedMultiplier());
+        }
+        
+        // Professional mode specific features
+        if (difficulty == DifficultyLevel.PROFESSIONAL) {
+            System.out.println("🏆 Professional Mode Activated!");
+            System.out.println("✨ Enhanced UI enabled");
+            System.out.println("📷 Advanced camera system enabled");
+            System.out.println("🏗️ Professional crane physics enabled");
+            
+            // PROFESSIONAL MODE BLOCK GENERATION FIX
+            blockDropped = false; // Force reset to ensure first block gets created
+            
+            // Enable advanced features if available
+            if (advancedFeatures != null) {
+                advancedFeatures.enableProfessionalMode(true);
+            }
         }
         
         this.currentState = GameState.PLAYING;
@@ -288,6 +304,22 @@ public class GameEngine implements KeyListener {
         // If crane doesn't have a block and we're not in the middle of dropping, create one
         if (crane.getCurrentBlock() == null && !blockDropped) {
             createNewBlock();
+        }
+        
+        // PROFESSIONAL MODE ENHANCED FIX: More aggressive block generation
+        if (currentDifficulty == DifficultyLevel.PROFESSIONAL) {
+            if (crane.getCurrentBlock() == null) {
+                blockDropped = false; // Force reset
+                createNewBlock();
+            }
+            // Also check if block has been dropped for too long without landing
+            else if (crane.getCurrentBlock() != null && crane.getCurrentBlock().isDropped()) {
+                Block currentProfBlock = crane.getCurrentBlock();
+                // If block has been falling for too long or is out of bounds, force reset
+                if (currentProfBlock.getY() > GAME_HEIGHT + 100) {
+                    handleBlockLost();
+                }
+            }
         }
     }
 
@@ -687,7 +719,6 @@ public class GameEngine implements KeyListener {
         // Update crane swing range based on tower height (Tower Bloxx 2005 mechanics)
         if (crane != null) {
             crane.updateSwingRange(towerHeight);
-            System.out.println("🎯 Swing range updated for height: " + towerHeight);
         }
         Block.BlockType blockType = determineBlockType(towerHeight);
         Color blockColor = getBlockColorForType(blockType, towerHeight);

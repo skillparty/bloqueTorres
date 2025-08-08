@@ -142,11 +142,13 @@ public class GamePanel extends JPanel implements KeyListener {
      */
     private void setupTimer() {
         Timer renderTimer = new Timer(33, e -> { // ~30 FPS - Smoother, less flickering
-            // Game update and render cycle
-            gameEngine.gameLoop(); // Update game logic
-            repaint(); // Render
-            updateEffects();
-            updatePerformanceStats();
+            // Game update and render cycle - only if gameEngine is set
+            if (gameEngine != null) {
+                gameEngine.gameLoop(); // Update game logic
+                repaint(); // Render
+                updateEffects();
+                updatePerformanceStats();
+            }
         });
         renderTimer.start();
     }
@@ -321,11 +323,7 @@ public class GamePanel extends JPanel implements KeyListener {
         // Professional HUD panel (top-left)
         renderMainHUD(g2d);
         
-        // Crane status panel (top-right)
-        renderCraneStatus(g2d);
-        
-        // ELIMINADO: Torre lateral derecha con luces parpadeantes
-        // Ahora se usa sistema unificado sin parpadeos en TowerVisualizationPanel
+        // ELIMINADO: Crane status panel integrado en tower progress card
         
         // Performance indicators (bottom-left)
         renderPerformanceInfo(g2d);
@@ -338,103 +336,440 @@ public class GamePanel extends JPanel implements KeyListener {
     }
     
     /**
-     * Renders the main HUD with score, lives, and essential info
+     * Renders the main HUD with professional card-based design
      */
     private void renderMainHUD(Graphics2D g2d) {
-        // Professional HUD background
-        g2d.setColor(new Color(0, 0, 0, 180));
-        g2d.fillRoundRect(10, 10, 280, 140, 15, 15);
+        // Main stats card (top-left)
+        renderStatsCard(g2d);
         
-        // HUD border with gradient effect
-        g2d.setColor(new Color(59, 130, 246));
-        g2d.setStroke(new BasicStroke(2));
-        g2d.drawRoundRect(10, 10, 280, 140, 15, 15);
+        // Tower progress card (top-right)
+        renderTowerProgressCard(g2d);
         
-        // Title
-        g2d.setFont(new Font("Arial", Font.BOLD, 16));
+        // Lives and combo card (bottom-left)
+        renderGameStatusCard(g2d);
+    }
+    
+    /**
+     * Professional stats card with modern design
+     */
+    private void renderStatsCard(Graphics2D g2d) {
+        int cardX = 15, cardY = 15;
+        int cardWidth = 280, cardHeight = 120;
+        
+        // Card background with subtle shadow
+        g2d.setColor(new Color(0, 0, 0, 50));
+        g2d.fillRoundRect(cardX + 3, cardY + 3, cardWidth, cardHeight, 20, 20);
+        
+        // Main card background with gradient effect
+        GradientPaint cardGradient = new GradientPaint(
+            cardX, cardY, new Color(20, 30, 60, 240),
+            cardX, cardY + cardHeight, new Color(10, 15, 30, 240)
+        );
+        g2d.setPaint(cardGradient);
+        g2d.fillRoundRect(cardX, cardY, cardWidth, cardHeight, 20, 20);
+        
+        // Premium border with glowing effect
+        g2d.setPaint(new GradientPaint(
+            cardX, cardY, new Color(59, 130, 246, 255),
+            cardX + cardWidth, cardY, new Color(147, 51, 234, 255)
+        ));
+        g2d.setStroke(new BasicStroke(2.5f));
+        g2d.drawRoundRect(cardX, cardY, cardWidth, cardHeight, 20, 20);
+        
+        // Title with modern typography
         g2d.setColor(new Color(248, 250, 252));
-        g2d.drawString("TOWER BLOXX", 20, 30);
+        g2d.setFont(new Font("SF Pro Display", Font.BOLD, 18));
+        g2d.drawString("🏗️ TOWER PROGRESS", cardX + 20, cardY + 30);
         
-        // Score with formatting
-        g2d.setFont(new Font("Arial", Font.BOLD, 14));
-        g2d.setColor(Color.YELLOW);
-        String scoreText = String.format("Score: %,d", currentScore);
-        g2d.drawString(scoreText, 20, 55);
+        // Score section with enhanced formatting
+        g2d.setFont(new Font("SF Pro Display", Font.BOLD, 16));
+        g2d.setColor(new Color(255, 215, 0)); // Gold
+        String scoreText = String.format("💰 Score: %,d pts", currentScore);
+        g2d.drawString(scoreText, cardX + 20, cardY + 55);
         
-        // Tower height with progress
+        // Tower height with enhanced visual indicator
         if (gameEngine != null && gameEngine.getTower() != null) {
             int height = gameEngine.getTower().getHeight();
-            g2d.setColor(Color.CYAN);
-            String heightText = String.format("Height: %d/163 floors", height);
-            g2d.drawString(heightText, 20, 75);
+            g2d.setColor(new Color(34, 197, 94)); // Emerald
+            String heightText = String.format("🏢 Height: %d floors", height);
+            g2d.drawString(heightText, cardX + 20, cardY + 80);
             
-            // Progress bar for height
-            int barWidth = 200;
-            int barHeight = 8;
-            int barX = 20;
-            int barY = 80;
+            // Professional progress bar
+            renderEnhancedProgressBar(g2d, cardX + 20, cardY + 90, 240, height, 163);
+        }
+    }
+    
+    /**
+     * Enhanced progress bar with professional styling
+     */
+    private void renderEnhancedProgressBar(Graphics2D g2d, int x, int y, int width, int current, int max) {
+        int height = 12;
+        
+        // Background track
+        g2d.setColor(new Color(30, 41, 59, 200));
+        g2d.fillRoundRect(x, y, width, height, height/2, height/2);
+        
+        // Progress calculation
+        double progress = Math.min(1.0, (double)current / max);
+        int progressWidth = (int)(width * progress);
+        
+        // Dynamic color based on progress
+        Color progressColor;
+        if (progress < 0.25) progressColor = new Color(34, 197, 94);    // Green
+        else if (progress < 0.5) progressColor = new Color(59, 130, 246); // Blue  
+        else if (progress < 0.75) progressColor = new Color(251, 191, 36); // Yellow
+        else progressColor = new Color(239, 68, 68);                      // Red
+        
+        // Progress fill with gradient
+        if (progressWidth > 0) {
+            GradientPaint progressGradient = new GradientPaint(
+                x, y, progressColor,
+                x, y + height, progressColor.darker()
+            );
+            g2d.setPaint(progressGradient);
+            g2d.fillRoundRect(x, y, progressWidth, height, height/2, height/2);
             
-            // Background
-            g2d.setColor(new Color(60, 60, 60));
-            g2d.fillRoundRect(barX, barY, barWidth, barHeight, 4, 4);
-            
-            // Progress
-            double progress = Math.min(1.0, height / 163.0);
-            int progressWidth = (int)(barWidth * progress);
-            
-            // Color based on progress
-            Color progressColor;
-            if (progress < 0.3) progressColor = Color.GREEN;
-            else if (progress < 0.6) progressColor = Color.YELLOW;
-            else if (progress < 0.9) progressColor = Color.ORANGE;
-            else progressColor = Color.RED;
-            
-            g2d.setColor(progressColor);
-            g2d.fillRoundRect(barX, barY, progressWidth, barHeight, 4, 4);
-            
-            // Border
-            g2d.setColor(Color.WHITE);
-            g2d.setStroke(new BasicStroke(1));
-            g2d.drawRoundRect(barX, barY, barWidth, barHeight, 4, 4);
+            // Shine effect
+            g2d.setColor(new Color(255, 255, 255, 60));
+            g2d.fillRoundRect(x + 1, y + 1, progressWidth - 2, height/3, height/4, height/4);
         }
         
-        // Lives with heart icons
-        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+        // Border
+        g2d.setColor(new Color(100, 116, 139, 150));
+        g2d.setStroke(new BasicStroke(1));
+        g2d.drawRoundRect(x, y, width, height, height/2, height/2);
+        
+        // Progress text
+        g2d.setFont(new Font("SF Pro Display", Font.PLAIN, 10));
         g2d.setColor(Color.WHITE);
-        g2d.drawString("Lives:", 20, 105);
+        String progressText = String.format("%.0f%%", progress * 100);
+        FontMetrics fm = g2d.getFontMetrics();
+        int textX = x + (width - fm.stringWidth(progressText)) / 2;
+        g2d.drawString(progressText, textX, y + height - 2);
+    }
+    
+    /**
+     * Professional tower stability and progress card
+     */
+    private void renderTowerProgressCard(Graphics2D g2d) {
+        int cardX = getWidth() - 320, cardY = 15;
+        int cardWidth = 300, cardHeight = 140;
+        
+        // Card shadow
+        g2d.setColor(new Color(0, 0, 0, 50));
+        g2d.fillRoundRect(cardX + 3, cardY + 3, cardWidth, cardHeight, 20, 20);
+        
+        // Card background
+        GradientPaint cardGradient = new GradientPaint(
+            cardX, cardY, new Color(30, 20, 60, 240),
+            cardX, cardY + cardHeight, new Color(15, 10, 30, 240)
+        );
+        g2d.setPaint(cardGradient);
+        g2d.fillRoundRect(cardX, cardY, cardWidth, cardHeight, 20, 20);
+        
+        // Premium border
+        g2d.setPaint(new GradientPaint(
+            cardX, cardY, new Color(168, 85, 247),
+            cardX + cardWidth, cardY, new Color(59, 130, 246)
+        ));
+        g2d.setStroke(new BasicStroke(2.5f));
+        g2d.drawRoundRect(cardX, cardY, cardWidth, cardHeight, 20, 20);
+        
+        if (gameEngine == null || gameEngine.getTower() == null) return;
+        
+        // Title
+        g2d.setColor(new Color(248, 250, 252));
+        g2d.setFont(new Font("SF Pro Display", Font.BOLD, 18));
+        g2d.drawString("🏗️ TOWER STATUS", cardX + 20, cardY + 30);
+        
+        Tower tower = gameEngine.getTower();
+        
+        // Overall stability indicator
+        double avgStability = calculateAverageStability(tower);
+        renderStabilityIndicator(g2d, cardX + 20, cardY + 45, avgStability);
+        
+        // Last block stability (most recent)
+        if (tower.getHeight() > 0) {
+            Block lastBlock = tower.getBlocks().get(tower.getHeight() - 1);
+            renderLastBlockStatus(g2d, cardX + 20, cardY + 85, lastBlock);
+        }
+        
+        // Mini tower visualization
+        renderMiniTowerVisualization(g2d, cardX + 220, cardY + 40, 60, 80);
+    }
+    
+    /**
+     * Calculate average stability of the tower
+     */
+    private double calculateAverageStability(Tower tower) {
+        if (tower.getHeight() == 0) return 1.0;
+        
+        double totalStability = 0;
+        for (Block block : tower.getBlocks()) {
+            totalStability += block.getStability();
+        }
+        return totalStability / tower.getHeight();
+    }
+    
+    /**
+     * Professional stability indicator
+     */
+    private void renderStabilityIndicator(Graphics2D g2d, int x, int y, double stability) {
+        // Label
+        g2d.setFont(new Font("SF Pro Display", Font.BOLD, 14));
+        g2d.setColor(new Color(156, 163, 175));
+        g2d.drawString("Overall Stability:", x, y);
+        
+        // Stability bar
+        int barWidth = 180, barHeight = 8;
+        int barX = x, barY = y + 5;
+        
+        // Background
+        g2d.setColor(new Color(55, 65, 81));
+        g2d.fillRoundRect(barX, barY, barWidth, barHeight, barHeight/2, barHeight/2);
+        
+        // Stability fill
+        int fillWidth = (int)(barWidth * stability);
+        Color stabilityColor = getStabilityColor(stability);
+        
+        GradientPaint stabilityGradient = new GradientPaint(
+            barX, barY, stabilityColor,
+            barX, barY + barHeight, stabilityColor.darker()
+        );
+        g2d.setPaint(stabilityGradient);
+        g2d.fillRoundRect(barX, barY, fillWidth, barHeight, barHeight/2, barHeight/2);
+        
+        // Stability text
+        g2d.setFont(new Font("SF Pro Display", Font.BOLD, 12));
+        g2d.setColor(Color.WHITE);
+        String stabilityText = String.format("%.1f%% %s", stability * 100, getStabilityLabel(stability));
+        g2d.drawString(stabilityText, x + 185, y);
+    }
+    
+    /**
+     * Get color based on stability value
+     */
+    private Color getStabilityColor(double stability) {
+        if (stability >= 0.8) return new Color(34, 197, 94);    // Green - Excellent
+        if (stability >= 0.6) return new Color(59, 130, 246);   // Blue - Good
+        if (stability >= 0.4) return new Color(251, 191, 36);   // Yellow - Fair
+        if (stability >= 0.2) return new Color(249, 115, 22);   // Orange - Poor
+        return new Color(239, 68, 68);                          // Red - Critical
+    }
+    
+    /**
+     * Get stability label
+     */
+    private String getStabilityLabel(double stability) {
+        if (stability >= 0.8) return "EXCELLENT";
+        if (stability >= 0.6) return "GOOD";
+        if (stability >= 0.4) return "FAIR";
+        if (stability >= 0.2) return "POOR";
+        return "CRITICAL";
+    }
+    
+    /**
+     * Show status of the last placed block
+     */
+    private void renderLastBlockStatus(Graphics2D g2d, int x, int y, Block block) {
+        g2d.setFont(new Font("SF Pro Display", Font.BOLD, 12));
+        g2d.setColor(new Color(156, 163, 175));
+        g2d.drawString("Last Block:", x, y);
+        
+        // Block color indicator
+        g2d.setColor(block.getColor());
+        g2d.fillRoundRect(x + 80, y - 10, 12, 12, 3, 3);
+        g2d.setColor(Color.WHITE);
+        g2d.drawRoundRect(x + 80, y - 10, 12, 12, 3, 3);
+        
+        // Block stability
+        double blockStability = block.getStability();
+        Color statusColor = getStabilityColor(blockStability);
+        g2d.setColor(statusColor);
+        g2d.setFont(new Font("SF Pro Display", Font.BOLD, 12));
+        String statusText = String.format("%.0f%% %s", blockStability * 100, getStabilityLabel(blockStability));
+        g2d.drawString(statusText, x + 100, y);
+    }
+    
+    /**
+     * Mini tower visualization for quick reference
+     */
+    private void renderMiniTowerVisualization(Graphics2D g2d, int x, int y, int width, int height) {
+        if (gameEngine == null || gameEngine.getTower() == null) return;
+        
+        Tower tower = gameEngine.getTower();
+        int towerHeight = tower.getHeight();
+        if (towerHeight == 0) return;
+        
+        // Background
+        g2d.setColor(new Color(17, 24, 39, 150));
+        g2d.fillRoundRect(x - 5, y - 5, width + 10, height + 10, 8, 8);
+        
+        // Show last 10 blocks
+        int maxBlocks = Math.min(10, towerHeight);
+        int blockHeight = height / maxBlocks;
+        
+        for (int i = 0; i < maxBlocks; i++) {
+            int blockIndex = towerHeight - maxBlocks + i;
+            Block block = tower.getBlocks().get(blockIndex);
+            
+            int blockY = y + height - (i + 1) * blockHeight;
+            int blockWidth = (int)(width * block.getStability() * 0.8) + (width / 5);
+            int blockX = x + (width - blockWidth) / 2;
+            
+            // Block with stability-based width
+            g2d.setColor(block.getColor());
+            g2d.fillRect(blockX, blockY, blockWidth, blockHeight - 1);
+            
+            // Block outline
+            g2d.setColor(block.getColor().brighter());
+            g2d.drawRect(blockX, blockY, blockWidth, blockHeight - 1);
+        }
+        
+        // Base
+        g2d.setColor(new Color(107, 114, 128));
+        g2d.fillRect(x, y + height, width, 3);
+    }
+    
+    /**
+     * Professional game status card (lives, combo, etc)
+     */
+    private void renderGameStatusCard(Graphics2D g2d) {
+        int cardX = 15, cardY = getHeight() - 120;
+        int cardWidth = 280, cardHeight = 100;
+        
+        // Card shadow
+        g2d.setColor(new Color(0, 0, 0, 50));
+        g2d.fillRoundRect(cardX + 3, cardY + 3, cardWidth, cardHeight, 20, 20);
+        
+        // Card background
+        GradientPaint cardGradient = new GradientPaint(
+            cardX, cardY, new Color(60, 20, 30, 240),
+            cardX, cardY + cardHeight, new Color(30, 10, 15, 240)
+        );
+        g2d.setPaint(cardGradient);
+        g2d.fillRoundRect(cardX, cardY, cardWidth, cardHeight, 20, 20);
+        
+        // Border
+        g2d.setPaint(new GradientPaint(
+            cardX, cardY, new Color(239, 68, 68),
+            cardX + cardWidth, cardY, new Color(251, 146, 60)
+        ));
+        g2d.setStroke(new BasicStroke(2.5f));
+        g2d.drawRoundRect(cardX, cardY, cardWidth, cardHeight, 20, 20);
+        
+        // Title
+        g2d.setColor(new Color(248, 250, 252));
+        g2d.setFont(new Font("SF Pro Display", Font.BOLD, 16));
+        g2d.drawString("❤️ GAME STATUS", cardX + 20, cardY + 25);
+        
+        // Lives with enhanced hearts
+        g2d.setFont(new Font("SF Pro Display", Font.BOLD, 14));
+        g2d.setColor(new Color(156, 163, 175));
+        g2d.drawString("Lives:", cardX + 20, cardY + 50);
         
         for (int i = 0; i < 3; i++) {
-            if (gameEngine != null) {
-                // Use actual lives from game engine if available
-                boolean hasLife = i < gameEngine.getLives();
-                g2d.setColor(hasLife ? Color.RED : new Color(60, 60, 60));
-            } else {
-                g2d.setColor(Color.RED);
-            }
-            
-            // Draw heart shape
-            int heartX = 70 + i * 25;
-            int heartY = 95;
-            drawHeart(g2d, heartX, heartY, 8);
+            boolean hasLife = gameEngine != null && i < gameEngine.getLives();
+            renderEnhancedHeart(g2d, cardX + 80 + i * 30, cardY + 40, hasLife);
         }
         
-        // Combo indicator
+        // Combo section
         if (gameEngine != null && gameEngine.getScoreManager() != null) {
             int combo = gameEngine.getScoreManager().getCurrentCombo();
-            if (combo > 1) {
-                g2d.setFont(new Font("Arial", Font.BOLD, 12));
-                g2d.setColor(Color.ORANGE);
-                g2d.drawString("Combo: x" + combo, 20, 125);
-            }
+            renderComboIndicator(g2d, cardX + 20, cardY + 65, combo);
         }
         
-        // Difficulty indicator
-        if (gameEngine != null) {
-            g2d.setFont(new Font("Arial", Font.PLAIN, 10));
-            g2d.setColor(Color.LIGHT_GRAY);
-            // String difficulty = gameEngine.getCurrentDifficulty().getDisplayName();
-            // g2d.drawString("Difficulty: " + difficulty, 20, 140);
-            g2d.drawString("Tower Bloxx - Enhanced", 20, 140);
+        // Performance indicator
+        g2d.setFont(new Font("SF Pro Display", Font.PLAIN, 11));
+        g2d.setColor(new Color(107, 114, 128));
+        String perfText = String.format("FPS: %.1f | Enhanced UI", renderFPS);
+        g2d.drawString(perfText, cardX + 20, cardY + 85);
+    }
+    
+    /**
+     * Enhanced heart with professional styling
+     */
+    private void renderEnhancedHeart(Graphics2D g2d, int centerX, int centerY, boolean hasLife) {
+        int size = 12;
+        
+        if (hasLife) {
+            // Active heart with gradient
+            GradientPaint heartGradient = new GradientPaint(
+                centerX - size/2, centerY - size/2, new Color(239, 68, 68),
+                centerX - size/2, centerY + size/2, new Color(185, 28, 28)
+            );
+            g2d.setPaint(heartGradient);
+            
+            // Heart shape using path
+            drawEnhancedHeart(g2d, centerX, centerY, size);
+            
+            // Highlight
+            g2d.setColor(new Color(255, 255, 255, 100));
+            drawEnhancedHeart(g2d, centerX - 1, centerY - 1, size - 2);
+            
+        } else {
+            // Inactive heart
+            g2d.setColor(new Color(75, 85, 99));
+            drawEnhancedHeart(g2d, centerX, centerY, size);
+            g2d.setColor(new Color(55, 65, 81));
+            g2d.setStroke(new BasicStroke(1));
+            drawEnhancedHeartOutline(g2d, centerX, centerY, size);
+        }
+    }
+    
+    /**
+     * Draw enhanced heart shape
+     */
+    private void drawEnhancedHeart(Graphics2D g2d, int centerX, int centerY, int size) {
+        // Left circle
+        g2d.fillOval(centerX - size * 3/4, centerY - size/2, size/2, size/2);
+        // Right circle  
+        g2d.fillOval(centerX - size/4, centerY - size/2, size/2, size/2);
+        // Bottom triangle
+        int[] xPoints = {centerX - size/2, centerX + size/2, centerX};
+        int[] yPoints = {centerY - size/4, centerY - size/4, centerY + size/2};
+        g2d.fillPolygon(xPoints, yPoints, 3);
+    }
+    
+    /**
+     * Draw heart outline
+     */
+    private void drawEnhancedHeartOutline(Graphics2D g2d, int centerX, int centerY, int size) {
+        g2d.drawOval(centerX - size * 3/4, centerY - size/2, size/2, size/2);
+        g2d.drawOval(centerX - size/4, centerY - size/2, size/2, size/2);
+        int[] xPoints = {centerX - size/2, centerX + size/2, centerX};
+        int[] yPoints = {centerY - size/4, centerY - size/4, centerY + size/2};
+        g2d.drawPolygon(xPoints, yPoints, 3);
+    }
+    
+    /**
+     * Professional combo indicator
+     */
+    private void renderComboIndicator(Graphics2D g2d, int x, int y, int combo) {
+        if (combo <= 1) {
+            // No combo - show potential
+            g2d.setFont(new Font("SF Pro Display", Font.PLAIN, 12));
+            g2d.setColor(new Color(107, 114, 128));
+            g2d.drawString("Perfect placement for combo!", x, y);
+        } else {
+            // Active combo with flash effect (static, epilepsy-safe)
+            g2d.setFont(new Font("SF Pro Display", Font.BOLD, 14));
+            
+            // Combo color based on value
+            Color comboColor;
+            if (combo >= 5) comboColor = new Color(168, 85, 247);      // Purple - Amazing
+            else if (combo >= 3) comboColor = new Color(59, 130, 246);  // Blue - Great
+            else comboColor = new Color(34, 197, 94);                   // Green - Good
+            
+            g2d.setColor(comboColor);
+            String comboText = String.format("🔥 COMBO x%d", combo);
+            g2d.drawString(comboText, x, y);
+            
+            // Combo multiplier indicator
+            g2d.setFont(new Font("SF Pro Display", Font.PLAIN, 11));
+            g2d.setColor(new Color(156, 163, 175));
+            String multiplierText = String.format("+%.0f%% Score Bonus", (combo - 1) * 50.0);
+            g2d.drawString(multiplierText, x + 120, y);
         }
     }
     
