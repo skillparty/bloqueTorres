@@ -99,8 +99,8 @@ public class ScoreStorageTest {
         
         assertEquals(1, scoreStorage.getScoreRank(35000)); // Would be 1st
         assertEquals(2, scoreStorage.getScoreRank(25000)); // Would be 2nd
-        assertEquals(4, scoreStorage.getScoreRank(15000)); // Would be 4th
-        assertEquals(5, scoreStorage.getScoreRank(5000));  // Would be 5th (last)
+        assertEquals(3, scoreStorage.getScoreRank(15000)); // Between 20000 and 10000 -> 3rd
+        assertEquals(4, scoreStorage.getScoreRank(5000));  // Below all three -> 4th (last)
     }
 
     @Test

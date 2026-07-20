@@ -219,10 +219,10 @@ public class ScoreStorage {
      * @return true if it would make the top 10
      */
     public boolean qualifiesForHighScore(int score) {
-        if (highScores.size() < MAX_SCORES) {
-            return true; // Always qualifies if we don't have 10 scores yet
+        if (highScores.isEmpty()) {
+            return true; // Anything beats an empty table
         }
-        
+
         HighScore lowestScore = highScores.get(highScores.size() - 1);
         return score > lowestScore.getScore();
     }
@@ -234,7 +234,8 @@ public class ScoreStorage {
      */
     public int getScoreRank(int score) {
         for (int i = 0; i < highScores.size(); i++) {
-            if (score > highScores.get(i).getScore()) {
+            // >= so a new score ties above an existing entry with the same value
+            if (score >= highScores.get(i).getScore()) {
                 return i + 1;
             }
         }

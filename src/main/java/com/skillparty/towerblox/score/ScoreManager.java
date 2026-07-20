@@ -10,6 +10,7 @@ public class ScoreManager {
     private int currentScore;
     private int blocksPlaced;
     private int perfectAlignments;
+    private int accuratePlacements;
     private int towerHeight;
     private DifficultyLevel difficulty;
     
@@ -38,6 +39,7 @@ public class ScoreManager {
         currentScore = 0;
         blocksPlaced = 0;
         perfectAlignments = 0;
+        accuratePlacements = 0;
         towerHeight = 0;
         currentCombo = 0;
     }
@@ -60,11 +62,18 @@ public class ScoreManager {
         // Alignment bonus
         int alignmentScore = block.getAlignmentScore(blockBelow);
         boolean isPerfectAlignment = alignmentScore >= PERFECT_ALIGNMENT_THRESHOLD;
-        
+
         if (isPerfectAlignment) {
             points += PERFECT_ALIGNMENT_BONUS;
-            perfectAlignments++;
-            currentCombo = Math.min(currentCombo + 1, MAX_COMBO);
+            accuratePlacements++;
+            // The very first block has nothing below it to align against, so
+            // Block.getAlignmentScore() trivially reports it as perfect. That's
+            // fine for accuracy/grading, but it shouldn't start or extend a
+            // combo streak the way a real alignment does.
+            if (blockBelow != null) {
+                perfectAlignments++;
+                currentCombo = Math.min(currentCombo + 1, MAX_COMBO);
+            }
         } else {
             // Partial alignment bonus
             points += (alignmentScore * 2); // Up to 200 bonus points for good alignment
@@ -99,8 +108,8 @@ public class ScoreManager {
     public int calculateFinalScore() {
         int finalScore = currentScore;
         
-        // Perfect game bonus (all blocks perfectly aligned)
-        if (blocksPlaced > 0 && perfectAlignments == blocksPlaced) {
+        // Perfect game bonus (every block placed accurately)
+        if (blocksPlaced > 0 && accuratePlacements == blocksPlaced) {
             finalScore += 5000 * (int)difficulty.getScoreMultiplier();
         }
         
@@ -123,7 +132,7 @@ public class ScoreManager {
      */
     public double getAccuracyPercentage() {
         if (blocksPlaced == 0) return 0.0;
-        return (double) perfectAlignments / blocksPlaced * 100.0;
+        return (double) accuratePlacements / blocksPlaced * 100.0;
     }
 
     /**
