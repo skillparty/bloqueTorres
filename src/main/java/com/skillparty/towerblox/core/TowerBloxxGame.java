@@ -48,6 +48,9 @@ public class TowerBloxxGame extends JPanel implements KeyListener {
     private boolean showDebugInfo = true;
     private double currentFPS;
     private long memoryUsage;
+
+    // Invoked when the player presses ESC to leave this screen
+    private Runnable onExitRequested;
     
     /**
      * Game states
@@ -506,7 +509,21 @@ public class TowerBloxxGame extends JPanel implements KeyListener {
                     restartGame();
                 }
                 break;
+
+            case KeyEvent.VK_ESCAPE:
+                if (onExitRequested != null) {
+                    gameLoop.stop();
+                    onExitRequested.run();
+                }
+                break;
         }
+    }
+
+    /**
+     * Sets the callback invoked when the player presses ESC to leave.
+     */
+    public void setOnExitRequested(Runnable onExitRequested) {
+        this.onExitRequested = onExitRequested;
     }
     
     @Override

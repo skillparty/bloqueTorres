@@ -1,5 +1,6 @@
 package com.skillparty.towerblox.ui;
 
+import com.skillparty.towerblox.core.TowerBloxxGame;
 import com.skillparty.towerblox.game.GameEngine;
 import com.skillparty.towerblox.game.GameState;
 import com.skillparty.towerblox.game.DifficultyLevel;
@@ -26,7 +27,8 @@ public class GameWindow extends JFrame implements GameEngine.GameStateListener {
     private ScorePanel scorePanel;
     private HighScorePanel highScorePanel;
     private MovementPanel movementPanel;
-    
+    private TowerBloxxGame professionalGame; // Lazily created; PROFESSIONAL difficulty only
+
     // Game engine
     private GameEngine gameEngine;
     private Thread gameThread;
@@ -160,6 +162,11 @@ public class GameWindow extends JFrame implements GameEngine.GameStateListener {
             case "GAME":
                 gamePanel.requestFocusInWindow();
                 break;
+            case "PROFESSIONAL":
+                if (professionalGame != null) {
+                    professionalGame.requestFocusInWindow();
+                }
+                break;
             case "MENU":
                 menuPanel.requestFocusInWindow();
                 break;
@@ -178,16 +185,40 @@ public class GameWindow extends JFrame implements GameEngine.GameStateListener {
      * Starts a new game with the specified difficulty
      */
     public void startNewGame(DifficultyLevel difficulty) {
+        if (difficulty == DifficultyLevel.PROFESSIONAL) {
+            startProfessionalGame();
+            return;
+        }
+
         // Stop any existing game thread
         stopGameThread();
-        
+
         // Start new game
         gameEngine.startNewGame(difficulty);
         showPanel("GAME");
-        
+
         // Game loop is handled by GamePanel timer
-        
+
         System.out.println("New game started with difficulty: " + difficulty.getDisplayName());
+    }
+
+    /**
+     * Starts PROFESSIONAL mode, which runs on its own self-contained
+     * TowerBloxxGame/CraneSystem instead of the standard GameEngine.
+     */
+    private void startProfessionalGame() {
+        stopGameThread();
+
+        if (professionalGame != null) {
+            mainPanel.remove(professionalGame);
+        }
+
+        professionalGame = new TowerBloxxGame();
+        professionalGame.setOnExitRequested(this::returnToMenu);
+        mainPanel.add(professionalGame, "PROFESSIONAL");
+
+        showPanel("PROFESSIONAL");
+        System.out.println("New game started with difficulty: Profesional");
     }
     
     /**
