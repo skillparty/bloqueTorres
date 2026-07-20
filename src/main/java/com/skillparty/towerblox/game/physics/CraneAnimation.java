@@ -20,8 +20,8 @@ public class CraneAnimation {
     
     private AnimationState currentState;
     private int currentFrame;
-    private long lastFrameTime;
-    private long animationStartTime;
+    private long frameElapsed;  // ms accumulated toward the next frame step
+    private long stateElapsed;  // ms accumulated since entering the current state
     
     // Animation parameters
     private static final int MAX_FRAMES = Constants.CRANE_ANIMATION_FRAMES;
@@ -50,10 +50,10 @@ public class CraneAnimation {
     public CraneAnimation() {
         this.currentState = AnimationState.IDLE;
         this.currentFrame = 0;
-        this.lastFrameTime = 0;
-        this.animationStartTime = 0;
+        this.frameElapsed = 0;
+        this.stateElapsed = 0;
     }
-    
+
     /**
      * Starts the block release animation sequence
      */
@@ -61,11 +61,11 @@ public class CraneAnimation {
         if (currentState == AnimationState.IDLE) {
             currentState = AnimationState.OPENING;
             currentFrame = 0;
-            animationStartTime = System.currentTimeMillis();
-            lastFrameTime = animationStartTime;
+            frameElapsed = 0;
+            stateElapsed = 0;
         }
     }
-    
+
     /**
      * Starts the block grabbing animation
      */
@@ -73,95 +73,101 @@ public class CraneAnimation {
         if (currentState == AnimationState.IDLE) {
             currentState = AnimationState.GRABBING;
             currentFrame = 0;
-            animationStartTime = System.currentTimeMillis();
-            lastFrameTime = animationStartTime;
+            frameElapsed = 0;
+            stateElapsed = 0;
         }
     }
-    
+
     /**
-     * Updates the animation state and frame
+     * Updates the animation state and frame, driven by simulation deltaTime
+     * (not wall-clock time) so progress is deterministic regardless of how
+     * fast update() is called.
      */
     public void update(long deltaTime) {
         if (currentState == AnimationState.IDLE) {
             return;
         }
-        
-        long currentTime = System.currentTimeMillis();
-        
+
         switch (currentState) {
             case OPENING:
-                updateOpeningAnimation(currentTime);
+                updateOpeningAnimation(deltaTime);
                 break;
-                
+
             case FULLY_OPEN:
-                updateFullyOpenState(currentTime);
+                updateFullyOpenState(deltaTime);
                 break;
-                
+
             case CLOSING:
-                updateClosingAnimation(currentTime);
+                updateClosingAnimation(deltaTime);
                 break;
-                
+
             case GRABBING:
-                updateGrabbingAnimation(currentTime);
+                updateGrabbingAnimation(deltaTime);
                 break;
         }
     }
-    
+
     /**
      * Updates the opening animation phase
      */
-    private void updateOpeningAnimation(long currentTime) {
-        if (currentTime - lastFrameTime >= FRAME_DURATION) {
+    private void updateOpeningAnimation(long deltaTime) {
+        frameElapsed += deltaTime;
+
+        while (frameElapsed >= FRAME_DURATION && currentState == AnimationState.OPENING) {
+            frameElapsed -= FRAME_DURATION;
             currentFrame++;
-            lastFrameTime = currentTime;
-            
+
             if (currentFrame >= MAX_FRAMES - 1) {
                 currentState = AnimationState.FULLY_OPEN;
                 currentFrame = MAX_FRAMES - 1;
-                animationStartTime = currentTime; // Reset for pause timing
+                stateElapsed = 0; // Reset for pause timing
+                frameElapsed = 0;
             }
         }
     }
-    
+
     /**
      * Updates the fully open pause state
      */
-    private void updateFullyOpenState(long currentTime) {
-        if (currentTime - animationStartTime >= OPEN_PAUSE_DURATION) {
+    private void updateFullyOpenState(long deltaTime) {
+        stateElapsed += deltaTime;
+        if (stateElapsed >= OPEN_PAUSE_DURATION) {
             currentState = AnimationState.CLOSING;
-            animationStartTime = currentTime;
-            lastFrameTime = currentTime;
+            stateElapsed = 0;
+            frameElapsed = 0;
         }
     }
-    
+
     /**
      * Updates the closing animation phase
      */
-    private void updateClosingAnimation(long currentTime) {
-        if (currentTime - lastFrameTime >= FRAME_DURATION) {
+    private void updateClosingAnimation(long deltaTime) {
+        frameElapsed += deltaTime;
+
+        while (frameElapsed >= FRAME_DURATION && currentState == AnimationState.CLOSING) {
+            frameElapsed -= FRAME_DURATION;
             currentFrame--;
-            lastFrameTime = currentTime;
-            
+
             if (currentFrame <= 0) {
                 currentState = AnimationState.IDLE;
                 currentFrame = 0;
             }
         }
     }
-    
+
     /**
      * Updates the grabbing animation (quick open-close for new blocks)
      */
-    private void updateGrabbingAnimation(long currentTime) {
-        long elapsed = currentTime - animationStartTime;
+    private void updateGrabbingAnimation(long deltaTime) {
+        stateElapsed += deltaTime;
         long totalDuration = FRAME_DURATION * MAX_FRAMES;
-        
-        if (elapsed >= totalDuration) {
+
+        if (stateElapsed >= totalDuration) {
             currentState = AnimationState.IDLE;
             currentFrame = 0;
         } else {
             // Quick open-close cycle
-            double progress = (double) elapsed / totalDuration;
+            double progress = (double) stateElapsed / totalDuration;
             if (progress < 0.5) {
                 // Opening phase
                 currentFrame = (int) (progress * 2 * (MAX_FRAMES - 1));
@@ -403,8 +409,8 @@ public class CraneAnimation {
     public void reset() {
         currentState = AnimationState.IDLE;
         currentFrame = 0;
-        lastFrameTime = 0;
-        animationStartTime = 0;
+        frameElapsed = 0;
+        stateElapsed = 0;
         isPaused = false;
         pauseEndTime = 0;
     }
