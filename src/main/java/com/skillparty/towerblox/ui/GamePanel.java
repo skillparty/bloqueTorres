@@ -3,7 +3,6 @@ package com.skillparty.towerblox.ui;
 import com.skillparty.towerblox.game.GameEngine;
 import com.skillparty.towerblox.ui.components.TowerVisualizationPanel;
 import com.skillparty.towerblox.effects.ProfessionalEffects;
-import com.skillparty.towerblox.game.physics.Crane;
 import com.skillparty.towerblox.game.physics.Tower;
 import com.skillparty.towerblox.game.physics.Block;
 // import com.skillparty.towerblox.ui.components.FontManager;
@@ -324,9 +323,6 @@ public class GamePanel extends JPanel implements KeyListener {
         renderMainHUD(g2d);
         
         // ELIMINADO: Crane status panel integrado en tower progress card
-        
-        // Performance indicators (bottom-left)
-        renderPerformanceInfo(g2d);
         
         // Controls help (bottom-center)
         renderControlsHelp(g2d);
@@ -679,10 +675,16 @@ public class GamePanel extends JPanel implements KeyListener {
             renderComboIndicator(g2d, cardX + 20, cardY + 65, combo);
         }
         
-        // Performance indicator
+        // FPS + game time
         g2d.setFont(new Font("SF Pro Display", Font.PLAIN, 11));
         g2d.setColor(new Color(107, 114, 128));
-        String perfText = String.format("FPS: %.1f | Enhanced UI", renderFPS);
+        String perfText = String.format("FPS: %.1f", renderFPS);
+        if (gameEngine != null) {
+            long gameTime = gameEngine.getGameTime();
+            int minutes = (int) (gameTime / 60000);
+            int seconds = (int) ((gameTime % 60000) / 1000);
+            perfText += String.format("  |  Time: %02d:%02d", minutes, seconds);
+        }
         g2d.drawString(perfText, cardX + 20, cardY + 85);
     }
     
@@ -787,133 +789,10 @@ public class GamePanel extends JPanel implements KeyListener {
     }
     
     /**
-     * Renders crane status and movement information
-     */
-    private void renderCraneStatus(Graphics2D g2d) {
-        if (gameEngine == null || gameEngine.getCrane() == null) return;
-        
-        int panelX = getWidth() - 300;
-        int panelY = 10;
-        int panelWidth = 280;
-        int panelHeight = 120;
-        
-        // Background
-        g2d.setColor(new Color(0, 0, 0, 180));
-        g2d.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 15, 15);
-        
-        // Border
-        g2d.setColor(new Color(16, 185, 129));
-        g2d.setStroke(new BasicStroke(2));
-        g2d.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 15, 15);
-        
-        // Title
-        g2d.setFont(new Font("Arial", Font.BOLD, 14));
-        g2d.setColor(Color.WHITE);
-        g2d.drawString("CRANE STATUS", panelX + 10, panelY + 20);
-        
-        Crane crane = gameEngine.getCrane();
-        
-        // Movement pattern
-        g2d.setFont(new Font("Arial", Font.PLAIN, 12));
-        g2d.setColor(Color.CYAN);
-        String pattern = getMovementPatternName(gameEngine.getTower().getHeight());
-        g2d.drawString("Pattern: " + pattern, panelX + 10, panelY + 40);
-        
-        // Speed indicator
-        double speedRatio = crane.getSpeed() / crane.getBaseSpeed();
-        Color speedColor = speedRatio < 1.5 ? Color.GREEN : 
-                          speedRatio < 2.5 ? Color.YELLOW : Color.RED;
-        g2d.setColor(speedColor);
-        g2d.drawString(String.format("Speed: %.1fx", speedRatio), panelX + 10, panelY + 55);
-        
-        // Range indicator
-        double rangePercent = (crane.getSwingRange() / (800 * 0.3)) * 100;
-        g2d.setColor(Color.ORANGE);
-        g2d.drawString(String.format("Range: %.0f%%", rangePercent), panelX + 10, panelY + 70);
-        
-        // Position indicator
-        g2d.setColor(Color.WHITE);
-        g2d.drawString(String.format("Position: %.0f", crane.getX()), panelX + 10, panelY + 85);
-        
-        // Direction indicator
-        String direction = crane.isMovingRight() ? "→ RIGHT" : "← LEFT";
-        g2d.setColor(crane.isMovingRight() ? Color.GREEN : Color.BLUE);
-        g2d.drawString(direction, panelX + 10, panelY + 100);
-        
-        // Precision zone indicator
-        renderPrecisionIndicator(g2d, panelX + 150, panelY + 40, crane);
-    }
-    
-    /**
-     * Renders precision timing indicator
-     */
-    private void renderPrecisionIndicator(Graphics2D g2d, int x, int y, Crane crane) {
-        // Calculate precision
-        double centerX = 400; // Game center
-        double distance = Math.abs(crane.getX() - centerX);
-        double maxDistance = crane.getSwingRange();
-        boolean inPerfectZone = distance < (maxDistance * 0.2);
-        
-        // Precision circle
-        g2d.setColor(inPerfectZone ? Color.GREEN : Color.RED);
-        g2d.fillOval(x, y, 20, 20);
-        
-        // Label
-        g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Arial", Font.BOLD, 10));
-        g2d.drawString(inPerfectZone ? "PERFECT" : "TIMING", x + 25, y + 12);
-        
-        // Precision bar
-        int barWidth = 80;
-        int barX = x;
-        int barY = y + 25;
-        
-        // Background
-        g2d.setColor(Color.DARK_GRAY);
-        g2d.fillRect(barX, barY, barWidth, 6);
-        
-        // Perfect zone
-        int perfectStart = barWidth * 2 / 5;
-        int perfectWidth = barWidth / 5;
-        g2d.setColor(new Color(0, 255, 0, 100));
-        g2d.fillRect(barX + perfectStart, barY, perfectWidth, 6);
-        
-        // Current position
-        int currentPos = (int)((distance / maxDistance) * (barWidth / 2));
-        if (crane.getX() < centerX) {
-            currentPos = barWidth / 2 - currentPos;
-        } else {
-            currentPos = barWidth / 2 + currentPos;
-        }
-        
-        g2d.setColor(Color.YELLOW);
-        g2d.fillRect(barX + currentPos - 1, barY - 2, 2, 10);
-    }
-
-    /**
      * ELIMINADO: renderTowerProgress - Reemplazado por sistema unificado sin parpadeos
      * El TowerVisualizationPanel ahora maneja toda la visualización de torre de forma segura
      */
 
-    /**
-     * Renders performance information
-     */
-    private void renderPerformanceInfo(Graphics2D g2d) {
-        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
-        g2d.setColor(new Color(150, 150, 150));
-        
-        // FPS counter
-        g2d.drawString(String.format("FPS: %.1f", renderFPS), 10, getHeight() - 40);
-        
-        // Game time
-        if (gameEngine != null) {
-            long gameTime = gameEngine.getGameTime();
-            int minutes = (int)(gameTime / 60000);
-            int seconds = (int)((gameTime % 60000) / 1000);
-            g2d.drawString(String.format("Time: %02d:%02d", minutes, seconds), 10, getHeight() - 25);
-        }
-    }
-    
     /**
      * Renders enhanced controls help
      */
@@ -951,20 +830,6 @@ public class GamePanel extends JPanel implements KeyListener {
         int textWidth = fm.stringWidth(modeText);
         g2d.drawString(modeText, (getWidth() - textWidth) / 2, 30);
     }
-    
-    /**
-     * Gets movement pattern name for display
-     */
-    private String getMovementPatternName(int towerHeight) {
-        if (towerHeight <= 10) return "STEADY";
-        if (towerHeight <= 25) return "ACCELERATING";
-        if (towerHeight <= 50) return "ERRATIC";
-        if (towerHeight <= 75) return "PRECISION";
-        if (towerHeight <= 100) return "CHAOTIC";
-        return "EXTREME";
-    }
-    
-
     
     /**
      * Renders visual effects
