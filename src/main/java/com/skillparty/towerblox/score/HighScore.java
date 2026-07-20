@@ -161,7 +161,7 @@ public class HighScore implements Comparable<HighScore>, Serializable {
      * Creates a formatted string for display in score table
      */
     public String toTableString(int rank) {
-        return String.format("%2d. %-3s %8d %-8s %s", 
+        return String.format("%2d. %-3s %,8d %-8s %s",
                            rank, getDisplayNickname(), score, getDifficultyName(), getFormattedDate());
     }
 }

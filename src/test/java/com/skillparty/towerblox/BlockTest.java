@@ -62,8 +62,10 @@ public class BlockTest {
 
     @Test
     public void testGroundCollision() {
-        assertFalse(block.collidesWithGround(100)); // Ground above block
-        assertTrue(block.collidesWithGround(130));  // Ground below block bottom
+        block.drop(); // collidesWithGround only applies to a falling block
+        // Block spans y=100 to y=130 (screen y grows downward, so bottom = y + height)
+        assertFalse(block.collidesWithGround(200)); // Ground further down, not reached yet
+        assertTrue(block.collidesWithGround(130));  // Ground exactly at block bottom
         assertTrue(block.collidesWithGround(125));  // Ground intersecting block
     }
 
