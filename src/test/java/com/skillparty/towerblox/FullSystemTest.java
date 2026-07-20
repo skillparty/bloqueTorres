@@ -139,7 +139,10 @@ public class FullSystemTest {
         // Test final score calculation
         int finalScore = scoreManager.calculateFinalScore();
         assertTrue(finalScore >= scoreManager.getCurrentScore());
-        
+
+        // End the game so addHighScore() is allowed to record the result
+        gameEngine.endGame("Test complete");
+
         // Test high score qualification
         boolean qualifies = scoreStorage.qualifiesForHighScore(finalScore);
         // Should qualify since we cleared scores or it's a decent score

@@ -1098,6 +1098,14 @@ public class GameEngine implements KeyListener {
     }
 
     /**
+     * Manually ends the game (e.g. player quits mid-session). No-op if the
+     * game has already ended.
+     */
+    public void endGame(String reason) {
+        triggerGameOver(reason);
+    }
+
+    /**
      * Adds a high score entry
      */
     public boolean addHighScore(String nickname) {

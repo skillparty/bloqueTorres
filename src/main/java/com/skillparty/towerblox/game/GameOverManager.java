@@ -162,8 +162,8 @@ public class GameOverManager {
             
             System.out.println("Game Over: " + reason.getMessage());
         }
-        
-        return reason;
+
+        return gameOverReason;
     }
     
     /**

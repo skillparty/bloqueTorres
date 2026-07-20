@@ -70,7 +70,7 @@ public class GameEngineTest {
         
         assertEquals(GameState.PLAYING, gameEngine.getCurrentState());
         assertEquals(DifficultyLevel.NORMAL, gameEngine.getCurrentDifficulty());
-        assertEquals(DifficultyLevel.NORMAL, stateListener.lastState);
+        assertEquals(GameState.PLAYING, stateListener.lastState);
     }
 
     @Test
