@@ -7,6 +7,7 @@ import java.awt.Rectangle;
 import java.awt.BasicStroke;
 import java.awt.GradientPaint;
 import java.awt.RenderingHints;
+import java.awt.geom.AffineTransform;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.util.ArrayList;
@@ -29,11 +30,13 @@ public class Block {
     private boolean hasBalcony;
     private boolean hasAntenna;
     private BlockDropAnimation dropAnimation;
-    
+    private long impactTime = -1; // Set on landing; drives a brief squash-and-settle render effect
+
     // Physics constants
     private static final double GRAVITY = 0.5;
     private static final double FRICTION = 0.98;
     private static final double MIN_VELOCITY = 0.1;
+    private static final long IMPACT_SQUASH_DURATION_MS = 150;
     
     // Block types for different building floors
     public enum BlockType {
@@ -238,10 +241,23 @@ public class Block {
         int blockY = (int)y;
         int blockWidth = (int)width;
         int blockHeight = (int)height;
-        
+
         // Enable antialiasing for smoother rendering
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
+
+        // Squash toward the bottom edge right after landing, easing back to normal
+        AffineTransform originalTransform = null;
+        double scaleX = getImpactScaleX();
+        double scaleY = getImpactScaleY();
+        if (scaleX != 1.0 || scaleY != 1.0) {
+            originalTransform = g2d.getTransform();
+            double pivotX = x + width / 2.0;
+            double pivotY = y + height;
+            g2d.translate(pivotX, pivotY);
+            g2d.scale(scaleX, scaleY);
+            g2d.translate(-pivotX, -pivotY);
+        }
+
         // Render based on block type
         switch (blockType) {
             case FOUNDATION:
@@ -274,8 +290,12 @@ public class Block {
         if (hasAntenna) {
             renderAntenna(g2d, blockX, blockY, blockWidth);
         }
+
+        if (originalTransform != null) {
+            g2d.setTransform(originalTransform);
+        }
     }
-    
+
     private void renderFoundation(Graphics2D g2d, int x, int y, int width, int height) {
         // PROFESSIONAL FOUNDATION DESIGN - HIGHLY VISIBLE BASE
         
@@ -462,6 +482,32 @@ public class Block {
     /**
      * Stops the block's movement and marks it as stable
      */
+    /**
+     * Marks the moment this block hit its resting surface, so render()
+     * plays a brief squash-and-settle effect. Independent of the fall
+     * animation state so it always plays even though landing finalizes
+     * the block's position in the same frame it touches down.
+     */
+    public void triggerImpactSquash() {
+        impactTime = System.currentTimeMillis();
+    }
+
+    private double impactProgress() {
+        if (impactTime < 0) return 1.0;
+        double elapsed = System.currentTimeMillis() - impactTime;
+        return Math.min(1.0, elapsed / IMPACT_SQUASH_DURATION_MS);
+    }
+
+    private double getImpactScaleX() {
+        double t = impactProgress();
+        return t >= 1.0 ? 1.0 : 1.0 + 0.15 * (1.0 - t);
+    }
+
+    private double getImpactScaleY() {
+        double t = impactProgress();
+        return t >= 1.0 ? 1.0 : 1.0 - 0.2 * (1.0 - t);
+    }
+
     public void makeStable() {
         isStable = true;
         velocityX = 0;

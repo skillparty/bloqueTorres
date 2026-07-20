@@ -237,21 +237,11 @@ public class GameEngine implements KeyListener {
             // Update the current block if it exists and is dropped
             Block currentBlock = crane.getCurrentBlock();
             if (currentBlock != null && currentBlock.isDropped()) {
-                // Use enhanced animation update instead of basic update
+                // Use enhanced animation update instead of basic update (trail/wobble while falling;
+                // the actual landing/impact is decided authoritatively by checkBlockLanding() below)
                 double deltaTimeSeconds = deltaTime / 1000.0;
                 currentBlock.updateWithAnimation(deltaTimeSeconds);
-                
-                // Check for landing collisions to trigger landing animation
-                if (tower != null && tower.getHeight() > 0) {
-                    Block topBlock = tower.getTopBlock();
-                    if (topBlock != null && currentBlock.getY() + currentBlock.getHeight() >= topBlock.getY()) {
-                        currentBlock.triggerLanding(topBlock.getY());
-                    }
-                } else if (currentBlock.getY() + currentBlock.getHeight() >= GAME_HEIGHT - 50) {
-                    // Landing on ground
-                    currentBlock.triggerLanding(GAME_HEIGHT - 50);
-                }
-                
+
                 // Add falling effects for dropped blocks (reduced frequency due to enhanced animation)
                 if (advancedFeatures != null && Math.random() < 0.1) { // Reduced to 10% chance per frame
                     int blockCenterX = (int)(currentBlock.getX() + currentBlock.getWidth() / 2);
@@ -580,7 +570,8 @@ public class GameEngine implements KeyListener {
             // Block has landed successfully
             blockDropped = true;
             currentBlock.makeStable();
-            
+            currentBlock.triggerImpactSquash();
+
             // Play landing sound
             if (soundManager != null) {
                 soundManager.playSound(SoundManager.SoundType.BLOCK_LAND);
