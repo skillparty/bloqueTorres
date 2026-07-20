@@ -35,9 +35,13 @@ public class Crane {
     
     // Movement recorder (keep for compatibility)
     private MovementRecorder movementRecorder;
-    
+
     // Current tower height for calculations
     private int currentTowerHeight = 0;
+
+    // Claw open/close animation (release + grab sequences)
+    private final CraneAnimation animation = new CraneAnimation();
+    private static final double DEFAULT_DROP_ZONE_WIDTH = 50.0;
     
     public Crane(double startX, double startY, int gameWidth) {
         this.gameWidth = gameWidth;
@@ -89,7 +93,10 @@ public class Crane {
             currentBlock.setX(x - currentBlock.getWidth() / 2);
             currentBlock.setY(y + craneHeight + hookLength);
         }
-        
+
+        // Advance claw open/close animation
+        animation.update(deltaTime);
+
         // Debug output every 60 frames (1 second)
         if (System.currentTimeMillis() % 1000 < 50) {
             System.out.println("🏗️ Crane position: " + String.format("%.1f", x) + 
@@ -291,8 +298,9 @@ public class Crane {
         if (currentBlock == null || currentBlock.isDropped()) {
             return;
         }
-        
+
         currentBlock.drop();
+        animation.startReleaseAnimation();
         System.out.println("🎯 Block dropped at position: " + x);
     }
     
@@ -317,6 +325,7 @@ public class Crane {
         this.speed = baseSpeed;
         this.movingRight = true;
         this.currentBlock = null;
+        animation.reset();
         System.out.println("🔄 Crane reset to center: " + x);
     }
     
@@ -324,7 +333,7 @@ public class Crane {
      * Set crane speed - SIMPLE AND DIRECT
      */
     public void setSpeed(double speed) {
-        this.speed = Math.max(1.0, Math.min(10.0, speed)); // Clamp between 1 and 10
+        this.speed = Math.max(0.5, Math.min(10.0, speed)); // Clamp between 0.5 and 10
         System.out.println("⚡ Crane speed set to: " + this.speed);
     }
     
@@ -368,13 +377,40 @@ public class Crane {
     public boolean isMovingRight() { return movingRight; }
     
     // SIMPLE SETTERS
-    public void setX(double x) { this.x = x; }
+    public void setX(double x) { this.x = Math.max(0, Math.min(gameWidth, x)); }
     public void setY(double y) { this.y = y; }
     public void setMovingRight(boolean movingRight) { this.movingRight = movingRight; }
     public void setMovementRecorder(MovementRecorder recorder) { this.movementRecorder = recorder; }
-    
+
     // COMPATIBILITY METHODS FOR OTHER CLASSES
-    public boolean isAnimating() { return false; } // Simple - no animation
+    public boolean isAnimating() { return animation.isAnimating(); }
+    public boolean isOpening() { return animation.isOpening(); }
+    public boolean isClosing() { return animation.isClosing(); }
+    public int getAnimationFrame() { return animation.getCurrentFrame(); }
+
+    /**
+     * True once the crane has no block to worry about anymore: either it
+     * never picked one up, or the current one has already been released.
+     */
+    public boolean isReadyForNewBlock() {
+        return currentBlock == null || currentBlock.isDropped();
+    }
+
+    public double getDropZoneLeft() {
+        double width = currentBlock != null ? currentBlock.getWidth() : DEFAULT_DROP_ZONE_WIDTH;
+        return x - width / 2;
+    }
+
+    public double getDropZoneRight() {
+        double width = currentBlock != null ? currentBlock.getWidth() : DEFAULT_DROP_ZONE_WIDTH;
+        return x + width / 2;
+    }
+
+    public String getStatus() {
+        return String.format("Pos: %.1f | Speed: %.1f | Block: %s | Animation: %s",
+                x, speed, currentBlock != null ? "Yes" : "No", animation.getCurrentState());
+    }
+
     public void setManualControl(boolean manual) { /* Simple - ignore */ }
     public void moveLeft(int pixels) { this.x = Math.max(minX, x - pixels); }
     public void moveRight(int pixels) { this.x = Math.min(maxX, x + pixels); }
