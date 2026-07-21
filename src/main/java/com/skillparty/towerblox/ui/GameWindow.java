@@ -185,11 +185,6 @@ public class GameWindow extends JFrame implements GameEngine.GameStateListener {
      * Starts a new game with the specified difficulty
      */
     public void startNewGame(DifficultyLevel difficulty) {
-        if (difficulty == DifficultyLevel.PROFESSIONAL) {
-            startProfessionalGame();
-            return;
-        }
-
         // Stop any existing game thread
         stopGameThread();
 
@@ -197,28 +192,7 @@ public class GameWindow extends JFrame implements GameEngine.GameStateListener {
         gameEngine.startNewGame(difficulty);
         showPanel("GAME");
 
-        // Game loop is handled by GamePanel timer
-
         System.out.println("New game started with difficulty: " + difficulty.getDisplayName());
-    }
-
-    /**
-     * Starts PROFESSIONAL mode, which runs on its own self-contained
-     * TowerBloxxGame/CraneSystem instead of the standard GameEngine.
-     */
-    private void startProfessionalGame() {
-        stopGameThread();
-
-        if (professionalGame != null) {
-            mainPanel.remove(professionalGame);
-        }
-
-        professionalGame = new TowerBloxxGame();
-        professionalGame.setOnExitRequested(this::returnToMenu);
-        mainPanel.add(professionalGame, "PROFESSIONAL");
-
-        showPanel("PROFESSIONAL");
-        System.out.println("New game started with difficulty: Profesional");
     }
     
     /**

@@ -116,10 +116,8 @@ public class GameFeedbackSystem {
         private double currentOffsetX, currentOffsetY;
         
         public void trigger(double intensity, long duration) {
-            this.active = true;
-            this.intensity = intensity;
-            this.duration = duration;
-            this.startTime = System.currentTimeMillis();
+            // Disabled screen shake for visual stability & epilepsy safety
+            this.active = false;
         }
         
         public void update(long deltaTime) {

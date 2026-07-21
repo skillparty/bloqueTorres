@@ -63,6 +63,14 @@ public class Crane {
     }
     
     /**
+     * UNIFIED CLAW COORDINATE SYSTEM
+     * Returns the exact Y coordinate where the claw mechanism renders and releases the block
+     */
+    public double getClawY() {
+        return y + hookLength + 25;
+    }
+
+    /**
      * SIMPLE UPDATE - JUST MOVE LEFT AND RIGHT
      */
     public void update(long deltaTime) {
@@ -77,32 +85,23 @@ public class Crane {
             if (x >= maxX) {
                 x = maxX;
                 movingRight = false;
-                System.out.println("🏗️ Crane reached RIGHT limit: " + x);
             }
         } else {
             x -= movement;
             if (x <= minX) {
                 x = minX;
                 movingRight = true;
-                System.out.println("🏗️ Crane reached LEFT limit: " + x);
             }
         }
         
-        // Update current block position if carrying one
+        // Update current block position if carrying one - PERFECT 0px CLAW SYNCHRONIZATION
         if (currentBlock != null && !currentBlock.isDropped()) {
-            currentBlock.setX(x - currentBlock.getWidth() / 2);
-            currentBlock.setY(y + craneHeight + hookLength);
+            currentBlock.setX(x - currentBlock.getWidth() / 2.0);
+            currentBlock.setY(getClawY());
         }
 
         // Advance claw open/close animation
         animation.update(deltaTime);
-
-        // Debug output every 60 frames (1 second)
-        if (System.currentTimeMillis() % 1000 < 50) {
-            System.out.println("🏗️ Crane position: " + String.format("%.1f", x) + 
-                             " | Moving: " + (movingRight ? "RIGHT" : "LEFT") + 
-                             " | Speed: " + String.format("%.1f", speed));
-        }
     }
     
     /**
@@ -299,9 +298,10 @@ public class Crane {
             return;
         }
 
+        currentBlock.setY(getClawY());
         currentBlock.drop();
         animation.startReleaseAnimation();
-        System.out.println("🎯 Block dropped at position: " + x);
+        System.out.println("🎯 Block dropped at position: " + x + ", y: " + getClawY());
     }
     
     /**
@@ -310,9 +310,9 @@ public class Crane {
     public void setCurrentBlock(Block block) {
         this.currentBlock = block;
         if (block != null) {
-            // Position block at crane location
-            block.setX(x - block.getWidth() / 2);
-            block.setY(y + craneHeight + hookLength);
+            // Position block at exact claw location (0px Y desync)
+            block.setX(x - block.getWidth() / 2.0);
+            block.setY(getClawY());
             System.out.println("🔗 New block attached to crane at: " + x);
         }
     }

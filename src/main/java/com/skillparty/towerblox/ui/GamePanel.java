@@ -130,6 +130,7 @@ public class GamePanel extends JPanel implements KeyListener {
         setBackground(Color.BLACK);
         setPreferredSize(new Dimension(Constants.GAME_WIDTH, Constants.GAME_HEIGHT));
         setFocusable(true);
+        setDoubleBuffered(true); // Double buffering to prevent UI flickering
         addKeyListener(this);
         
         // Use BorderLayout to position the stats panel
@@ -137,11 +138,10 @@ public class GamePanel extends JPanel implements KeyListener {
     }
     
     /**
-     * Sets up the rendering timer
+     * Sets up the rendering timer (Synchronized 60 FPS)
      */
     private void setupTimer() {
-        Timer renderTimer = new Timer(33, e -> { // ~30 FPS - Smoother, less flickering
-            // Game update and render cycle - only if gameEngine is set
+        Timer renderTimer = new Timer(16, e -> { // ~60 FPS - Single synchronized loop
             if (gameEngine != null) {
                 gameEngine.gameLoop(); // Update game logic
                 repaint(); // Render
@@ -352,52 +352,42 @@ public class GamePanel extends JPanel implements KeyListener {
     }
     
     /**
-     * Professional stats card with modern design
+     * Minimalist, clean and cinematic HUD stats card (top-left)
      */
     private void renderStatsCard(Graphics2D g2d) {
-        int cardX = leftPanelWidth() + 15, cardY = 15;
-        int cardWidth = 280, cardHeight = 120;
+        int cardX = leftPanelWidth() + 20, cardY = 20;
+        int cardWidth = 240, cardHeight = 90;
         
-        // Card background with subtle shadow
-        g2d.setColor(new Color(0, 0, 0, 50));
-        g2d.fillRoundRect(cardX + 3, cardY + 3, cardWidth, cardHeight, 20, 20);
+        // Minimalist glass container
+        g2d.setColor(new Color(15, 23, 42, 190));
+        g2d.fillRoundRect(cardX, cardY, cardWidth, cardHeight, 12, 12);
         
-        // Main card background with gradient effect
-        GradientPaint cardGradient = new GradientPaint(
-            cardX, cardY, new Color(20, 30, 60, 240),
-            cardX, cardY + cardHeight, new Color(10, 15, 30, 240)
-        );
-        g2d.setPaint(cardGradient);
-        g2d.fillRoundRect(cardX, cardY, cardWidth, cardHeight, 20, 20);
+        // 1px subtle crisp border
+        g2d.setColor(new Color(255, 255, 255, 30));
+        g2d.setStroke(new BasicStroke(1.0f));
+        g2d.drawRoundRect(cardX, cardY, cardWidth, cardHeight, 12, 12);
         
-        // Premium border with glowing effect
-        g2d.setPaint(new GradientPaint(
-            cardX, cardY, new Color(59, 130, 246, 255),
-            cardX + cardWidth, cardY, new Color(147, 51, 234, 255)
-        ));
-        g2d.setStroke(new BasicStroke(2.5f));
-        g2d.drawRoundRect(cardX, cardY, cardWidth, cardHeight, 20, 20);
+        // Title label
+        g2d.setColor(new Color(148, 163, 184));
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 10));
+        g2d.drawString("ESTADO DE TORRE", cardX + 16, cardY + 22);
         
-        // Title with modern typography
-        g2d.setColor(new Color(248, 250, 252));
-        g2d.setFont(new Font("SF Pro Display", Font.BOLD, 18));
-        g2d.drawString("🏗️ TOWER PROGRESS", cardX + 20, cardY + 30);
-        
-        // Score section with enhanced formatting
-        g2d.setFont(new Font("SF Pro Display", Font.BOLD, 16));
-        g2d.setColor(new Color(255, 215, 0)); // Gold
-        String scoreText = String.format("💰 Score: %,d pts", currentScore);
-        g2d.drawString(scoreText, cardX + 20, cardY + 55);
-        
-        // Tower height with enhanced visual indicator
+        // Tower Height
         if (gameEngine != null && gameEngine.getTower() != null) {
             int height = gameEngine.getTower().getHeight();
-            g2d.setColor(new Color(34, 197, 94)); // Emerald
-            String heightText = String.format("🏢 Height: %d floors", height);
-            g2d.drawString(heightText, cardX + 20, cardY + 80);
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("SansSerif", Font.BOLD, 18));
+            String heightText = height + " PISOS";
+            g2d.drawString(heightText, cardX + 16, cardY + 46);
             
-            // Professional progress bar
-            renderEnhancedProgressBar(g2d, cardX + 20, cardY + 90, 240, height, 163);
+            // Stability label & indicator
+            double stability = Math.max(0.0, Math.min(100.0, gameEngine.getTower().getStabilityPercentage()));
+            g2d.setFont(new Font("SansSerif", Font.BOLD, 10));
+            g2d.setColor(new Color(148, 163, 184));
+            g2d.drawString(String.format("ESTABILIDAD: %.0f%%", stability), cardX + 16, cardY + 64);
+            
+            // Stability progress track
+            renderEnhancedProgressBar(g2d, cardX + 16, cardY + 70, 208, (int)stability, 100);
         }
     }
     
@@ -770,7 +760,7 @@ public class GamePanel extends JPanel implements KeyListener {
             else comboColor = new Color(34, 197, 94);                   // Green - Good
             
             g2d.setColor(comboColor);
-            String comboText = String.format("🔥 COMBO x%d", combo);
+            String comboText = String.format("COMBO x%d", combo);
             g2d.drawString(comboText, x, y);
             
             // Combo multiplier indicator

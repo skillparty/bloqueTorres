@@ -171,20 +171,9 @@ public class GameEngine implements KeyListener {
             crane.setSpeed(crane.getBaseSpeed() * difficulty.getSpeedMultiplier());
         }
         
-        // Professional mode specific features
-        if (difficulty == DifficultyLevel.PROFESSIONAL) {
-            System.out.println("🏆 Professional Mode Activated!");
-            System.out.println("✨ Enhanced UI enabled");
-            System.out.println("📷 Advanced camera system enabled");
-            System.out.println("🏗️ Professional crane physics enabled");
-            
-            // PROFESSIONAL MODE BLOCK GENERATION FIX
-            blockDropped = false; // Force reset to ensure first block gets created
-            
-            // Enable advanced features if available
-            if (advancedFeatures != null) {
-                advancedFeatures.enableProfessionalMode(true);
-            }
+        // Enable advanced features if available
+        if (advancedFeatures != null) {
+            advancedFeatures.enableProfessionalMode(true);
         }
         
         this.currentState = GameState.PLAYING;
@@ -295,22 +284,6 @@ public class GameEngine implements KeyListener {
         if (crane.getCurrentBlock() == null && !blockDropped) {
             createNewBlock();
         }
-        
-        // PROFESSIONAL MODE ENHANCED FIX: More aggressive block generation
-        if (currentDifficulty == DifficultyLevel.PROFESSIONAL) {
-            if (crane.getCurrentBlock() == null) {
-                blockDropped = false; // Force reset
-                createNewBlock();
-            }
-            // Also check if block has been dropped for too long without landing
-            else if (crane.getCurrentBlock() != null && crane.getCurrentBlock().isDropped()) {
-                Block currentProfBlock = crane.getCurrentBlock();
-                // If block has been falling for too long or is out of bounds, force reset
-                if (currentProfBlock.getY() > GAME_HEIGHT + 100) {
-                    handleBlockLost();
-                }
-            }
-        }
     }
 
     /**
@@ -321,26 +294,20 @@ public class GameEngine implements KeyListener {
             return;
         }
         
-        // Save the original transform
+        // Save original screen transform
         var originalTransform = g2d.getTransform();
         
-        // Apply camera transformation
-        g2d.translate(0, cameraY);
-        
-        // Render professional dynamic city background
+        // 1. Render dynamic parallax background in screen space (0, 0, GAME_WIDTH, GAME_HEIGHT)
         if (cityBackground != null) {
             int towerHeight = tower != null ? tower.getHeight() : 0;
             cityBackground.render(g2d, towerHeight, cameraY);
         } else {
-            // Fallback background
-            g2d.setColor(new Color(135, 206, 235)); // Sky blue
-            g2d.fillRect(0, (int)-cameraY, GAME_WIDTH, GAME_HEIGHT);
+            g2d.setColor(new Color(135, 206, 235)); // Fallback sky blue
+            g2d.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
         }
         
-        // Draw ground
-        g2d.setColor(new Color(34, 139, 34)); // Forest green
-        g2d.fillRect(0, GROUND_LEVEL, GAME_WIDTH, GAME_HEIGHT - GROUND_LEVEL);
-        // }
+        // 2. Apply camera transformation for world objects (Tower, Crane, Blocks, Particles)
+        g2d.translate(0, cameraY);
         
         // Render game objects (they will be affected by camera)
         if (tower != null) {
@@ -580,8 +547,23 @@ public class GameEngine implements KeyListener {
             // Add to tower
             Block previousTop = tower.getTopBlock();
             int previousHeight = tower.getHeight();
+
+            // Special block mechanics before/after adding to tower
+            if (currentBlock.isMagnetic() && previousTop != null) {
+                double prevCenter = previousTop.getX() + previousTop.getWidth() / 2.0;
+                double currCenter = currentBlock.getX() + currentBlock.getWidth() / 2.0;
+                double offset = prevCenter - currCenter;
+                if (Math.abs(offset) < 40.0) {
+                    currentBlock.setX(currentBlock.getX() + offset * 0.75);
+                }
+            }
+
             tower.addBlock(currentBlock);
             int newHeight = tower.getHeight();
+
+            if (currentBlock.isSteel()) {
+                tower.reduceInstability(0.15);
+            }
             
             // Professional gameplay analysis and feedback
             GameplayEnhancer.GameplayFeedback feedback = gameplayEnhancer.analyzeBlockPlacement(
@@ -590,6 +572,12 @@ public class GameEngine implements KeyListener {
             
             // Calculate enhanced score using existing ScoreManager method
             int points = scoreManager.addBlockScore(currentBlock, previousTop);
+
+            if (currentBlock.isGlass()) {
+                scoreManager.addBonusPoints(points); // Double score for glass block
+            } else if (currentBlock.isGolden()) {
+                scoreManager.addBonusPoints(500); // 500 bonus for golden block
+            }
             
             // Add bonus points based on professional analysis
             if (feedback.score > points) {
@@ -755,14 +743,32 @@ public class GameEngine implements KeyListener {
     private Block.BlockType determineBlockType(int towerHeight) {
         if (towerHeight == 0) {
             return Block.BlockType.FOUNDATION;
-        } else if (towerHeight < 5) {
-            return Block.BlockType.COMMERCIAL; // Ground floor shops
+        }
+
+        // Random chance for special blocks starting after height 3
+        if (towerHeight > 3) {
+            double roll = random.nextDouble();
+            if (towerHeight % 10 == 0) {
+                return Block.BlockType.GOLDEN; // Milestone block
+            } else if (roll < 0.10) {
+                return Block.BlockType.STEEL;
+            } else if (roll < 0.20) {
+                return Block.BlockType.GLASS;
+            } else if (roll < 0.28) {
+                return Block.BlockType.MAGNETIC;
+            } else if (roll < 0.35) {
+                return Block.BlockType.GOLDEN;
+            }
+        }
+
+        if (towerHeight < 5) {
+            return Block.BlockType.COMMERCIAL;
         } else if (towerHeight < 15) {
-            return Block.BlockType.RESIDENTIAL; // Residential floors
+            return Block.BlockType.RESIDENTIAL;
         } else if (towerHeight < 25) {
-            return Block.BlockType.OFFICE; // Office floors
+            return Block.BlockType.OFFICE;
         } else {
-            return Block.BlockType.PENTHOUSE; // Luxury top floors
+            return Block.BlockType.PENTHOUSE;
         }
     }
     
@@ -773,6 +779,14 @@ public class GameEngine implements KeyListener {
         switch (blockType) {
             case FOUNDATION:
                 return new Color(120, 120, 120); // Gray concrete
+            case STEEL:
+                return new Color(70, 80, 95);
+            case GLASS:
+                return new Color(0, 200, 255);
+            case GOLDEN:
+                return new Color(255, 215, 0);
+            case MAGNETIC:
+                return new Color(140, 20, 230);
             case COMMERCIAL:
                 Color[] commercialColors = {
                     new Color(255, 69, 0),    // Orange Red

@@ -85,7 +85,7 @@ public class ScoreStorage {
                 
                 // Limit to MAX_SCORES
                 if (highScores.size() > MAX_SCORES) {
-                    highScores = highScores.subList(0, MAX_SCORES);
+                    highScores = new ArrayList<>(highScores.subList(0, MAX_SCORES));
                 }
                 
                 System.out.println("Loaded " + highScores.size() + " high scores");
@@ -200,7 +200,7 @@ public class ScoreStorage {
         
         // Keep only top MAX_SCORES
         if (highScores.size() > MAX_SCORES) {
-            highScores = highScores.subList(0, MAX_SCORES);
+            highScores = new ArrayList<>(highScores.subList(0, MAX_SCORES));
         }
         
         // Check if the score made it to the top 10

@@ -13,16 +13,9 @@ public class Main {
         clearConsole();
         showASCIIIntro();
 
-        // Wait a moment for the logo to be appreciated
-        try {
-            Thread.sleep(3000); // 3 seconds
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        System.out.println("\n🎮 Starting javaBloxx Game...");
-        System.out.println("📱 Resolution: 1280x720 (Professional Edition)");
-        System.out.println("🏗️ Loading enhanced animations and professional movement...");
+        System.out.println("\nStarting javaBloxx Game...");
+        System.out.println("Resolution: 1280x720");
+        System.out.println("Loading game assets...");
 
         SwingUtilities.invokeLater(() -> {
             try {
@@ -54,7 +47,7 @@ public class Main {
         logo.printToConsole();
 
         System.out.println("═══════════════════════════════════════════════════════════════════════════════");
-        System.out.println("                    🏗️  PROFESSIONAL TOWER BUILDING EXPERIENCE  🏗️");
+        System.out.println("                     TOWER BUILDING EXPERIENCE");
         System.out.println("═══════════════════════════════════════════════════════════════════════════════");
         System.out.println();
     }

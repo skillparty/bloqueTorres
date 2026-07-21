@@ -184,6 +184,14 @@ public class Tower {
         // Determine if tower is stable
         isStable = instabilityScore < Constants.TOWER_INSTABILITY_THRESHOLD;
     }
+
+    /**
+     * Reduces instability (used by heavy steel blocks)
+     */
+    public void reduceInstability(double amount) {
+        instabilityScore = Math.max(0.0, instabilityScore - amount);
+        isStable = instabilityScore < Constants.TOWER_INSTABILITY_THRESHOLD;
+    }
     
     /**
      * Calculates the tilt angle of the tower
@@ -377,6 +385,10 @@ public class Tower {
     
     public double getInstabilityScore() {
         return instabilityScore;
+    }
+    
+    public double getStabilityPercentage() {
+        return Math.max(0.0, (1.0 - instabilityScore) * 100.0);
     }
     
     public double getTiltAngle() {

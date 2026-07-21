@@ -44,7 +44,11 @@ public class Block {
         RESIDENTIAL,   // Apartment floors
         OFFICE,        // Office floors
         COMMERCIAL,    // Shop/restaurant floors
-        PENTHOUSE     // Top luxury floors
+        PENTHOUSE,     // Top luxury floors
+        STEEL,         // Heavy steel block (+15% stability)
+        GLASS,         // Fragile glass block (2x score multiplier)
+        GOLDEN,        // Shiny golden block (+500 bonus points)
+        MAGNETIC       // Magnetic balancer block (snaps to center)
     }
     
     // Window class for building floors
@@ -135,12 +139,16 @@ public class Block {
                 generateResidentialWindows(windowWidth, windowHeight, spacing);
                 break;
             case OFFICE:
+            case STEEL:
+            case MAGNETIC:
                 generateOfficeWindows(windowWidth, windowHeight, spacing);
                 break;
             case COMMERCIAL:
+            case GLASS:
                 generateCommercialWindows(windowWidth, windowHeight, spacing);
                 break;
             case PENTHOUSE:
+            case GOLDEN:
                 generatePenthouseWindows(windowWidth, windowHeight, spacing);
                 break;
         }
@@ -274,6 +282,18 @@ public class Block {
                 break;
             case PENTHOUSE:
                 renderPenthouseFloor(g2d, blockX, blockY, blockWidth, blockHeight);
+                break;
+            case STEEL:
+                renderSteelFloor(g2d, blockX, blockY, blockWidth, blockHeight);
+                break;
+            case GLASS:
+                renderGlassFloor(g2d, blockX, blockY, blockWidth, blockHeight);
+                break;
+            case GOLDEN:
+                renderGoldenFloor(g2d, blockX, blockY, blockWidth, blockHeight);
+                break;
+            case MAGNETIC:
+                renderMagneticFloor(g2d, blockX, blockY, blockWidth, blockHeight);
                 break;
         }
         
@@ -611,6 +631,130 @@ public class Block {
     
     public boolean isStable() { return isStable; }
     public boolean isDropped() { return isDropped; }
+
+    // Special block type helper methods
+    public boolean isSteel() { return blockType == BlockType.STEEL; }
+    public boolean isGlass() { return blockType == BlockType.GLASS; }
+    public boolean isGolden() { return blockType == BlockType.GOLDEN; }
+    public boolean isMagnetic() { return blockType == BlockType.MAGNETIC; }
+    public boolean isSpecial() { return isSteel() || isGlass() || isGolden() || isMagnetic(); }
+
+    private void renderSteelFloor(Graphics2D g2d, int x, int y, int width, int height) {
+        // Industrial steel building floor gradient
+        GradientPaint steelGradient = new GradientPaint(
+            x, y, new Color(110, 120, 135),
+            x + width, y + height, new Color(60, 70, 85)
+        );
+        g2d.setPaint(steelGradient);
+        g2d.fillRect(x, y, width, height);
+
+        // Building outline
+        g2d.setColor(new Color(40, 50, 65));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRect(x, y, width, height);
+
+        // Metallic corner rivets
+        g2d.setColor(new Color(200, 215, 230));
+        g2d.fillOval(x + 3, y + 3, 4, 4);
+        g2d.fillOval(x + width - 7, y + 3, 4, 4);
+        g2d.fillOval(x + 3, y + height - 7, 4, 4);
+        g2d.fillOval(x + width - 7, y + height - 7, 4, 4);
+
+        // Floor label banner
+        g2d.setColor(new Color(30, 40, 55, 190));
+        g2d.fillRect(x + 10, y + height - 12, width - 20, 10);
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 9));
+        FontMetrics fm = g2d.getFontMetrics();
+        String label = "ACERO (+ESTABILIDAD)";
+        g2d.drawString(label, x + (width - fm.stringWidth(label)) / 2, y + height - 4);
+    }
+
+    private void renderGlassFloor(Graphics2D g2d, int x, int y, int width, int height) {
+        // Modern glass curtain-wall skyscraper floor gradient
+        GradientPaint glassGradient = new GradientPaint(
+            x, y, new Color(0, 210, 245, 220),
+            x + width, y + height, new Color(0, 110, 190, 230)
+        );
+        g2d.setPaint(glassGradient);
+        g2d.fillRect(x, y, width, height);
+
+        // Glass reflection streaks
+        g2d.setColor(new Color(255, 255, 255, 110));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawLine(x + 12, y + 2, x + 35, y + height - 2);
+        g2d.drawLine(x + 24, y + 2, x + 47, y + height - 2);
+
+        // Outer glass frame
+        g2d.setColor(new Color(0, 80, 150));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRect(x, y, width, height);
+
+        // Floor label banner
+        g2d.setColor(new Color(0, 50, 100, 190));
+        g2d.fillRect(x + 10, y + height - 12, width - 20, 10);
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 9));
+        FontMetrics fm = g2d.getFontMetrics();
+        String label = "CRISTAL (x2 PUNTOS)";
+        g2d.drawString(label, x + (width - fm.stringWidth(label)) / 2, y + height - 4);
+    }
+
+    private void renderGoldenFloor(Graphics2D g2d, int x, int y, int width, int height) {
+        // Luxurious gold penthouse floor gradient
+        GradientPaint goldGradient = new GradientPaint(
+            x, y, new Color(255, 220, 50),
+            x + width, y + height, new Color(200, 150, 20)
+        );
+        g2d.setPaint(goldGradient);
+        g2d.fillRect(x, y, width, height);
+
+        // Golden trim and inner highlight
+        g2d.setColor(new Color(255, 255, 190));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawLine(x + 2, y + 2, x + width - 2, y + 2);
+        g2d.setColor(new Color(150, 100, 10));
+        g2d.drawRect(x, y, width, height);
+
+        // Floor label banner
+        g2d.setColor(new Color(100, 70, 10, 200));
+        g2d.fillRect(x + 10, y + height - 12, width - 20, 10);
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 9));
+        FontMetrics fm = g2d.getFontMetrics();
+        String label = "DORADO (+500 PTS)";
+        g2d.drawString(label, x + (width - fm.stringWidth(label)) / 2, y + height - 4);
+    }
+
+    private void renderMagneticFloor(Graphics2D g2d, int x, int y, int width, int height) {
+        // High-tech magnetic energy floor gradient
+        GradientPaint magnetGradient = new GradientPaint(
+            x, y, new Color(150, 40, 220),
+            x + width, y + height, new Color(60, 10, 130)
+        );
+        g2d.setPaint(magnetGradient);
+        g2d.fillRect(x, y, width, height);
+
+        // Magnetic polarity accent side bars
+        g2d.setColor(new Color(230, 40, 40));
+        g2d.fillRect(x + 2, y + 2, 5, height - 4);
+        g2d.setColor(new Color(40, 140, 240));
+        g2d.fillRect(x + width - 7, y + 2, 5, height - 4);
+
+        // Outer frame
+        g2d.setColor(new Color(40, 10, 90));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRect(x, y, width, height);
+
+        // Floor label banner
+        g2d.setColor(new Color(40, 10, 80, 200));
+        g2d.fillRect(x + 10, y + height - 12, width - 20, 10);
+        g2d.setColor(Color.WHITE);
+        g2d.setFont(new Font("Arial", Font.BOLD, 9));
+        FontMetrics fm = g2d.getFontMetrics();
+        String label = "MAGNETICO (ALINEADOR)";
+        g2d.drawString(label, x + (width - fm.stringWidth(label)) / 2, y + height - 4);
+    }
     
     public Rectangle getBounds() {
         return new Rectangle((int)x, (int)y, (int)width, (int)height);
