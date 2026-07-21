@@ -422,7 +422,7 @@ public class GameEngine implements KeyListener {
         // Controles mejorados
         g2d.setColor(Color.WHITE);
         g2d.setFont(new Font("Arial", Font.BOLD, 14));
-        g2d.drawString("SPACE = Drop Block | P = Pause | ESC = Menu", GAME_WIDTH / 2 - 150, GAME_HEIGHT - 20);
+        g2d.drawString("SPACE = Drop Block | P = Pause | ESC = Menu | M = Movement Recorder", GAME_WIDTH / 2 - 200, GAME_HEIGHT - 20);
     }
     
     /**

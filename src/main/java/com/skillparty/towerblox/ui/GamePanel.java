@@ -6,7 +6,7 @@ import com.skillparty.towerblox.effects.ProfessionalEffects;
 import com.skillparty.towerblox.game.physics.Tower;
 import com.skillparty.towerblox.game.physics.Block;
 // import com.skillparty.towerblox.ui.components.FontManager;
-// import com.skillparty.towerblox.utils.Constants;
+import com.skillparty.towerblox.utils.Constants;
 
 import javax.swing.*;
 import java.awt.*;
@@ -128,7 +128,7 @@ public class GamePanel extends JPanel implements KeyListener {
      */
     private void initializePanel() {
         setBackground(Color.BLACK);
-        setPreferredSize(new Dimension(800 + 200, 600)); // Increased width for stats panel
+        setPreferredSize(new Dimension(Constants.GAME_WIDTH, Constants.GAME_HEIGHT));
         setFocusable(true);
         addKeyListener(this);
         
@@ -181,6 +181,14 @@ public class GamePanel extends JPanel implements KeyListener {
         
         // Revalidate to update layout
         revalidate();
+    }
+
+    /**
+     * Width reserved by the WEST-docked tower visualization panel, so absolutely-positioned
+     * HUD cards painted in paintComponent don't overlap it.
+     */
+    private int leftPanelWidth() {
+        return towerVisualizationPanel != null ? towerVisualizationPanel.getWidth() : 0;
     }
     
     /**
@@ -321,12 +329,10 @@ public class GamePanel extends JPanel implements KeyListener {
     private void renderGameUI(Graphics2D g2d) {
         // Professional HUD panel (top-left)
         renderMainHUD(g2d);
-        
+
         // ELIMINADO: Crane status panel integrado en tower progress card
-        
-        // Controls help (bottom-center)
-        renderControlsHelp(g2d);
-        
+        // ELIMINADO: renderControlsHelp - duplica el hint ya dibujado por GameEngine.render()
+
         // Game mode indicator (top-center)
         renderGameModeInfo(g2d);
     }
@@ -349,7 +355,7 @@ public class GamePanel extends JPanel implements KeyListener {
      * Professional stats card with modern design
      */
     private void renderStatsCard(Graphics2D g2d) {
-        int cardX = 15, cardY = 15;
+        int cardX = leftPanelWidth() + 15, cardY = 15;
         int cardWidth = 280, cardHeight = 120;
         
         // Card background with subtle shadow
@@ -631,7 +637,7 @@ public class GamePanel extends JPanel implements KeyListener {
      * Professional game status card (lives, combo, etc)
      */
     private void renderGameStatusCard(Graphics2D g2d) {
-        int cardX = 15, cardY = getHeight() - 120;
+        int cardX = leftPanelWidth() + 15, cardY = getHeight() - 120;
         int cardWidth = 280, cardHeight = 100;
         
         // Card shadow
@@ -793,22 +799,6 @@ public class GamePanel extends JPanel implements KeyListener {
      * El TowerVisualizationPanel ahora maneja toda la visualización de torre de forma segura
      */
 
-    /**
-     * Renders enhanced controls help
-     */
-    private void renderControlsHelp(Graphics2D g2d) {
-        // Background for controls
-        g2d.setColor(new Color(0, 0, 0, 120));
-        g2d.fillRoundRect(getWidth()/2 - 200, getHeight() - 35, 400, 25, 10, 10);
-        
-        g2d.setFont(new Font("Arial", Font.BOLD, 12));
-        g2d.setColor(Color.WHITE);
-        String controls = "SPACE: Drop Block  |  P: Pause  |  ESC: Menu  |  M: Movement Recorder";
-        FontMetrics fm = g2d.getFontMetrics();
-        int controlsWidth = fm.stringWidth(controls);
-        g2d.drawString(controls, (getWidth() - controlsWidth) / 2, getHeight() - 15);
-    }
-    
     /**
      * Renders game mode information
      */

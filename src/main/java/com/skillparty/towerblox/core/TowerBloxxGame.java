@@ -437,14 +437,11 @@ public class TowerBloxxGame extends JPanel implements KeyListener {
         // Update tower height
         towerHeight++;
         
-        // Spawn next block
+        // Spawn next block after a brief delay (non-blocking: never sleep the EDT)
         currentBlock = null;
-        SwingUtilities.invokeLater(() -> {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {}
-            spawnNewBlock();
-        });
+        Timer spawnTimer = new Timer(500, e -> spawnNewBlock());
+        spawnTimer.setRepeats(false);
+        spawnTimer.start();
     }
     
     /**

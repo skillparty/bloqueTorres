@@ -26,20 +26,9 @@ public class Main {
 
         SwingUtilities.invokeLater(() -> {
             try {
-                // Create and show the game window - skip menu, go directly to game
+                // GameWindow shows MENU on construction; game starts on a real Play click
                 GameWindow gameWindow = new GameWindow();
                 gameWindow.setVisible(true);
-
-                // Auto-start the game after a brief moment
-                SwingUtilities.invokeLater(() -> {
-                    try {
-                        Thread.sleep(500);
-                        gameWindow.startGameDirectly();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                });
-
             } catch (Exception e) {
                 System.err.println("Error starting Tower Bloxx: " + e.getMessage());
                 e.printStackTrace();
